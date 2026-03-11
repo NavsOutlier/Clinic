@@ -24,7 +24,7 @@ interface SidebarProps {
 export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const navItems = [
     { id: "dashboard", label: "Visão Geral", icon: LayoutDashboard, color: "text-emerald-600" },
-    { id: "ai-secretary", label: "Assistente de Voz", icon: Bot, color: "text-teal-600" },
+    { id: "ai-secretary", label: "Assistente IA", icon: Bot, color: "text-teal-600" },
     { id: "finance", label: "Financeiro", icon: CircleDollarSign, color: "text-emerald-700" },
     { id: "appointments", label: "Agendamentos", icon: CalendarDays, color: "text-teal-700" },
     { id: "medical-records", label: "Prontuários", icon: ClipboardList, color: "text-slate-700" },

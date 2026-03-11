@@ -160,7 +160,7 @@ function AISettings() {
                         <Bot className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                        <CardTitle className="text-2xl font-bold text-slate-900">Assistente Virtual</CardTitle>
+                        <CardTitle className="text-2xl font-bold text-slate-900">Assistente IA</CardTitle>
                         <p className="text-slate-500 font-medium">Configure o comportamento da assistente automática.</p>
                     </div>
                 </div>
@@ -203,7 +203,7 @@ function AISettings() {
                     <div>
                         <p className="font-bold text-slate-900 text-sm">Preview da Bio:</p>
                         <p className="text-slate-500 font-medium text-sm mt-1">
-                            "Olá! Sou a assistente virtual da clínica. Estou aqui para ajudá-lo com agendamentos, informações sobre procedimentos e dúvidas gerais."
+                            "Olá! Sou a assistente IA da clínica. Estou aqui para ajudá-lo com agendamentos, informações sobre procedimentos e dúvidas gerais."
                         </p>
                     </div>
                 </div>

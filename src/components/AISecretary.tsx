@@ -17,19 +17,22 @@ import {
   ShieldCheck,
   Stethoscope,
   Clock,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { LeadKanban } from "./LeadKanban";
+import { ServiceDashboard } from "./ServiceDashboard";
 
 export function AISecretary() {
-  const [activeTab, setActiveTab] = useState<"chats" | "config">("chats");
+  const [activeTab, setActiveTab] = useState<"chats" | "leads" | "dashboard" | "config">("chats");
 
   return (
     <div className="space-y-8 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-            Assistente <span className="text-teal-600">Virtual</span>
+            Assistente <span className="text-teal-600">IA</span>
           </h2>
           <p className="text-slate-500 font-medium text-base">
             Gestão inteligente de agendamentos e pacientes.
@@ -45,7 +48,29 @@ export function AISecretary() {
                 : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
             )}
           >
-            Atendimentos Ativos
+            Atendimentos
+          </button>
+          <button
+            onClick={() => setActiveTab("leads")}
+            className={cn(
+              "px-6 py-2 text-sm font-semibold rounded-md transition-all",
+              activeTab === "leads"
+                ? "bg-teal-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+            )}
+          >
+            Funil de Leads
+          </button>
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={cn(
+              "px-6 py-2 text-sm font-semibold rounded-md transition-all",
+              activeTab === "dashboard"
+                ? "bg-teal-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50",
+            )}
+          >
+            Dashboard
           </button>
           <button
             onClick={() => setActiveTab("config")}
@@ -70,7 +95,10 @@ export function AISecretary() {
           transition={{ duration: 0.2 }}
           className="flex-1 min-h-0"
         >
-          {activeTab === "chats" ? <ChatsView /> : <ConfigView />}
+          {activeTab === "chats" && <ChatsView />}
+          {activeTab === "leads" && <LeadKanban />}
+          {activeTab === "dashboard" && <ServiceDashboard />}
+          {activeTab === "config" && <ConfigView />}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -78,6 +106,11 @@ export function AISecretary() {
 }
 
 function ChatsView() {
+  const messages = [
+    { role: "user", content: "Olá! Gostaria de agendar uma consulta para a próxima semana.", time: "10:40" },
+    { role: "assistant", content: "Olá, Maria! Com certeza. Temos os seguintes horários disponíveis na próxima semana:\n\n📅 Terça-feira (14/05) às 14:00\n📅 Quinta-feira (16/05) às 10:00\n\nQual desses horários é mais conveniente para você?", time: "10:41" }
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 h-full min-h-[600px]">
       <Card className="col-span-1 flex flex-col border border-slate-200 shadow-sm bg-white overflow-hidden">
@@ -160,9 +193,6 @@ function ChatsView() {
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="hidden sm:flex border-teal-200 text-teal-700 hover:bg-teal-50">
-            Intervenção Manual
-          </Button>
         </CardHeader>
 
         <CardContent className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/20">
@@ -172,52 +202,45 @@ function ChatsView() {
             </span>
           </div>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4 max-w-[85%]">
-            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 shadow-sm flex-shrink-0 flex items-center justify-center">
-              <User className="w-4 h-4 text-slate-400" />
-            </div>
-            <div className="bg-white border border-slate-200 p-4 rounded-xl rounded-tl-none shadow-sm">
-              <p className="text-sm font-medium text-slate-700 leading-relaxed">
-                Olá! Gostaria de agendar uma consulta para a próxima semana.
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4 max-w-[85%] ml-auto flex-row-reverse">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 shadow-md flex items-center justify-center flex-shrink-0">
-              <Bot className="w-5 h-5 text-white" />
-            </div>
-            <div className="bg-teal-600 text-white p-4 rounded-xl rounded-tr-none shadow-sm relative">
-              <p className="text-sm font-medium leading-relaxed">
-                Olá, Maria! Com certeza. Temos os seguintes horários disponíveis na próxima semana:
-                <br /><br />
-                📅 Terça-feira (14/05) às 14:00
-                <br />
-                📅 Quinta-feira (16/05) às 10:00
-                <br /><br />
-                Qual desses horários é mais conveniente para você?
-              </p>
-            </div>
-          </motion.div>
-        </CardContent>
-
-        <div className="p-4 border-t border-slate-100 bg-white shrink-0">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Aguardando ação do sistema (IA ativa)..."
-              className="w-full pl-6 pr-14 py-3 text-sm border border-slate-200 rounded-lg bg-slate-50 italic text-slate-400 cursor-not-allowed"
-              disabled
-            />
-            <Button
-              size="icon"
-              className="absolute right-1 top-1 h-10 w-10 bg-slate-100"
-              disabled
+          {messages.map((msg, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className={cn(
+                "flex gap-4 max-w-[85%]",
+                (msg.role === "assistant" || msg.role === "system") ? "" : "ml-auto flex-row-reverse"
+              )}
             >
-              <Send className="w-4 h-4 text-slate-300" />
-            </Button>
-          </div>
-        </div>
+              <div className={cn(
+                "w-8 h-8 rounded-lg shadow-sm flex-shrink-0 flex items-center justify-center",
+                msg.role === "assistant" ? "bg-teal-600 shadow-md" : "bg-white border border-slate-200"
+              )}>
+                {msg.role === "assistant" ? (
+                  <Bot className="w-5 h-5 text-white" />
+                ) : (
+                  <User className="w-4 h-4 text-slate-400" />
+                )}
+              </div>
+              <div className={cn(
+                "p-4 rounded-xl shadow-sm relative",
+                msg.role === "assistant" 
+                  ? "bg-teal-600 text-white rounded-tr-none" 
+                  : "bg-white border border-slate-200 text-slate-700 rounded-tl-none"
+              )}>
+                <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                  {msg.content}
+                </p>
+                <span className={cn(
+                  "text-[9px] mt-1 block opacity-60 font-bold uppercase",
+                  msg.role === "assistant" ? "text-white text-right" : "text-slate-400"
+                )}>
+                  {msg.time}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </CardContent>
       </Card>
     </div>
   );
@@ -243,7 +266,7 @@ function ConfigView() {
             </label>
             <input
               type="text"
-              defaultValue="Assistente de Voz"
+              defaultValue="Assistente IA"
               className="w-full px-4 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
             />
           </div>
@@ -272,7 +295,7 @@ function ConfigView() {
             <textarea
               rows={4}
               className="w-full p-4 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all resize-none"
-              defaultValue="Você é a assistente virtual da Clínica Médica. Seu objetivo é realizar agendamentos de forma eficiente e cordial. Seja clara sobre disponibilidades e confirme todos os dados necessários para o cadastro do paciente."
+              defaultValue="Você é a assistente IA da Clínica Médica. Seu objetivo é realizar agendamentos de forma eficiente e cordial. Seja clara sobre disponibilidades e confirme todos os dados necessários para o cadastro do paciente."
             />
           </div>
           <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6">
