@@ -112,6 +112,16 @@ export function Settings() {
         }
     };
 
+    const handleWhatsappCancel = async () => {
+        if (!clinic?.id) return;
+        try {
+            await updateWhatsapp({ status: 'disconnected', qr_code: undefined });
+            console.log('Conexão cancelada pelo usuário.');
+        } catch (error) {
+            console.error('Erro ao cancelar conexão:', error);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -198,6 +208,7 @@ export function Settings() {
                                 data={localWA} 
                                 onChange={(updates) => setLocalWA(prev => ({ ...prev, ...updates }))} 
                                 onConnect={handleWhatsappConnect}
+                                onCancel={handleWhatsappCancel}
                                 connecting={connecting}
                             />
                         )}
@@ -459,10 +470,11 @@ function ClinicSettings({ data, onChange }: { data: Partial<Clinic>, onChange: (
     );
 }
 
-function IntegrationSettings({ data, onChange, onConnect, connecting }: { 
+function IntegrationSettings({ data, onChange, onConnect, onCancel, connecting }: { 
     data: Partial<WhatsappInstance>, 
     onChange: (updates: Partial<WhatsappInstance>) => void,
     onConnect: () => void,
+    onCancel: () => void,
     connecting: boolean
 }) {
     const [simulating, setSimulating] = useState(false);
@@ -596,7 +608,7 @@ function IntegrationSettings({ data, onChange, onConnect, connecting }: {
                                         {(data.status === 'qr_pending' || data.status === 'connecting') && (
                                             <Button 
                                                 variant="outline"
-                                                onClick={() => onChange({ status: 'disconnected', qr_code: undefined })}
+                                                onClick={onCancel}
                                                 className="text-slate-500 border-slate-200 hover:bg-slate-100 h-12 px-6 font-bold flex items-center gap-2"
                                             >
                                                 <X className="w-4 h-4" /> Cancelar
