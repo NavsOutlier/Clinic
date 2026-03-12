@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFunnelStages, useLeads } from "../hooks/useSupabase";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LeadChat } from "./LeadChat";
 
 export function LeadKanban() {
   const { data: stages, loading: stagesLoading } = useFunnelStages();
@@ -24,6 +25,7 @@ export function LeadKanban() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [formData, setFormData] = useState({ name: '', phone: '', source: 'manual', stage_id: '', estimated_value: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [chatLead, setChatLead] = useState<any>(null);
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) return;
@@ -139,9 +141,18 @@ export function LeadKanban() {
                     {lead.phone && (
                       <p className="text-[10px] font-medium text-slate-400 mb-2">{lead.phone}</p>
                     )}
-                    <div className="flex items-center gap-2 text-slate-500 mb-3">
-                      <MessageSquare className="w-3 h-3" />
-                      <span className="text-[10px] font-medium">Lead ativo</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <MessageSquare className="w-3 h-3" />
+                        <span className="text-[10px] font-medium">Lead ativo</span>
+                      </div>
+                      <button 
+                        onClick={() => setChatLead(lead)}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-teal-50 text-teal-700 rounded-md text-[10px] font-bold border border-teal-100 hover:bg-teal-100 transition-colors"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        Chat
+                      </button>
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                       <div className="bg-teal-50 text-teal-700 text-[10px] font-bold px-2 py-0.5 rounded border border-teal-100">
@@ -244,6 +255,13 @@ export function LeadKanban() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lead Chat Drawer */}
+      <AnimatePresence>
+        {chatLead && (
+          <LeadChat lead={chatLead} onClose={() => setChatLead(null)} />
         )}
       </AnimatePresence>
     </div>

@@ -413,13 +413,15 @@ export function useDashboardStats() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    const [aptsRes, revenueRes, patientsRes] = await Promise.all([
+    const [aptsRes, revenueRes, patientsRes, messagesRes] = await Promise.all([
       supabase.from('appointments').select('id', { count: 'exact', head: true })
         .eq('clinic_id', clinicId).gte('date', startOfMonth).lte('date', endOfMonth),
       supabase.from('financial_transactions').select('amount')
         .eq('clinic_id', clinicId).eq('type', 'receita').eq('status', 'pago')
         .gte('date', startOfMonth).lte('date', endOfMonth),
       supabase.from('patients').select('id', { count: 'exact', head: true })
+        .eq('clinic_id', clinicId).gte('created_at', startOfMonth),
+      supabase.from('chat_messages').select('id', { count: 'exact', head: true })
         .eq('clinic_id', clinicId).gte('created_at', startOfMonth),
     ]);
 
@@ -428,7 +430,7 @@ export function useDashboardStats() {
     setData({
       totalAppointments: aptsRes.count || 0,
       totalRevenue,
-      totalMessages: 0,
+      totalMessages: messagesRes.count || 0,
       newPatients: patientsRes.count || 0,
     });
     setLoading(false);
@@ -444,6 +446,7 @@ export function useDashboardStats() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments', filter: `clinic_id=eq.${profile.clinic_id}` }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_transactions', filter: `clinic_id=eq.${profile.clinic_id}` }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: `clinic_id=eq.${profile.clinic_id}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages', filter: `clinic_id=eq.${profile.clinic_id}` }, () => load())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -715,3 +718,88 @@ export function useSettings() {
   return { clinic, aiConfig, whatsapp, loading, refetch: fetch, updateClinic, updateAI, updateWhatsapp };
 }
 
+
+// ==========================================
+// CHAT MESSAGES
+// ==========================================
+export interface ChatMessage {
+  id: string;
+  clinic_id: string;
+  lead_id: string | null;
+  patient_id: string | null;
+  direction: 'inbound' | 'outbound';
+  sender: 'user' | 'ai' | 'system';
+  content: string;
+  phone: string | null;
+  metadata: any;
+  created_at: string;
+}
+
+export function useChatMessages(leadId?: string) {
+  const { profile } = useAuth();
+  const [data, setData] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetch = useCallback(async () => {
+    if (!profile?.clinic_id) return;
+    setLoading(true);
+    let query = supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('clinic_id', profile.clinic_id);
+    
+    if (leadId) {
+      query = query.eq('lead_id', leadId);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: true });
+    
+    if (error) { setError(error.message); setLoading(false); return; }
+    setData(data || []);
+    setError(null);
+    setLoading(false);
+  }, [profile?.clinic_id, leadId]);
+
+  useEffect(() => { 
+    fetch(); 
+    if (!profile?.clinic_id) return;
+
+    const channel = supabase
+      .channel(`chat_${leadId || 'all'}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages',
+        filter: leadId ? `lead_id=eq.${leadId}` : `clinic_id=eq.${profile.clinic_id}`
+      }, (payload) => {
+        // Only add if it belongs to current filter
+        const newMsg = payload.new as ChatMessage;
+        if (!leadId || newMsg.lead_id === leadId) {
+          setData(prev => [...prev, newMsg]);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetch, profile?.clinic_id, leadId]);
+
+  const send = async (msg: Partial<ChatMessage>) => {
+    if (!profile?.clinic_id) return null;
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert({ 
+        ...msg, 
+        clinic_id: profile.clinic_id, 
+        direction: 'outbound', 
+        sender: 'user',
+        lead_id: leadId || msg.lead_id
+      })
+      .select()
+      .single();
+    if (error) { setError(error.message); return null; }
+    return data;
+  };
+
+  return { data, loading, error, refetch: fetch, send };
+}
