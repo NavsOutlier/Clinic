@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSettings, Clinic, AIConfig, WhatsappInstance, supabase } from "../hooks/useSupabase";
+import { useSettings, Clinic, AIConfig, WhatsappInstance } from "../hooks/useSupabase";
+import { supabase } from "../lib/supabase";
 
 export function Settings() {
     const { clinic, aiConfig, whatsapp, loading, updateClinic, updateAI, updateWhatsapp } = useSettings();
@@ -436,15 +437,7 @@ function IntegrationSettings({ data, onChange, onConnect, connecting }: {
     onConnect: () => void,
     connecting: boolean
 }) {
-    const [copied, setCopied] = useState(false);
     const [simulating, setSimulating] = useState(false);
-
-    const handleCopyWebhook = () => {
-        if (!data.api_url) return;
-        navigator.clipboard.writeText(`${data.api_url}/webhook/whatsapp`);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -457,7 +450,7 @@ function IntegrationSettings({ data, onChange, onConnect, connecting }: {
                             </div>
                             <div>
                                 <CardTitle className="text-2xl font-bold text-white">WhatsApp Business</CardTitle>
-                                <p className="text-white/80 font-medium text-sm">Integração via UaZapi API</p>
+                                <p className="text-white/80 font-medium text-sm">Integração simplificada via n8n Bridge</p>
                             </div>
                         </div>
                         <div className={cn(
@@ -476,48 +469,21 @@ function IntegrationSettings({ data, onChange, onConnect, connecting }: {
                 </CardHeader>
 
                 <CardContent className="p-8 space-y-8">
-                    <div className="space-y-4">
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-teal-600" />
-                            Configuração da API
-                        </h3>
-                        <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">URL da Instância UaZapi</label>
-                                <input
-                                    type="text"
-                                    value={data.api_url || ''}
-                                    onChange={(e) => onChange({ api_url: e.target.value })}
-                                    placeholder="https://sua-instancia.uazapi.com"
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-teal-100 focus:border-teal-300 outline-none transition-all"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Token da API</label>
-                                <input
-                                    type="password"
-                                    value={data.api_token || ''}
-                                    onChange={(e) => onChange({ api_token: e.target.value })}
-                                    placeholder="Seu token de autenticação"
-                                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-teal-100 focus:border-teal-300 outline-none transition-all"
-                                />
-                            </div>
-                        </div>
-                    </div>
 
                     <div className="border border-slate-200 rounded-xl overflow-hidden">
                         {(data.status === "disconnected" || !data.status) && (
                             <div className="p-10 flex flex-col items-center gap-6 bg-slate-50/50">
                                 <QrCode className="w-12 h-12 text-slate-300" />
-                                <div className="flex flex-col items-center gap-4">
-                                    <p className="text-slate-400 font-medium text-sm text-center">Configure os dados acima e salve para conectar.</p>
+                                <div className="flex flex-col items-center gap-4 text-center">
+                                    <p className="text-slate-500 font-bold">Pronto para conectar?</p>
+                                    <p className="text-slate-400 font-medium text-sm max-w-xs transition-all">A conexão será processada via n8n. Certifique-se de que o fluxo esteja ativo.</p>
                                     <Button 
                                         onClick={onConnect} 
-                                        disabled={connecting || !data.api_url || !data.api_token}
-                                        className="bg-teal-600 hover:bg-teal-700 text-white gap-2 h-10 px-8 font-bold"
+                                        disabled={connecting}
+                                        className="bg-teal-600 hover:bg-teal-700 text-white gap-2 h-12 px-10 font-bold shadow-lg shadow-teal-100 transition-all active:scale-95"
                                     >
-                                        {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
-                                        {connecting ? 'Iniciando Conexão...' : 'Conectar Agora (via n8n)'}
+                                        {connecting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wifi className="w-4 h-4" />}
+                                        {connecting ? 'Iniciando Conexão...' : 'Conectar Agora'}
                                     </Button>
                                 </div>
                             </div>
@@ -544,19 +510,6 @@ function IntegrationSettings({ data, onChange, onConnect, connecting }: {
                                     </Button>
                                 </div>
 
-                                {data.api_url && (
-                                    <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200 space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Webhook URL</label>
-                                        <div className="flex items-center gap-2">
-                                            <code className="flex-1 px-3 py-2 bg-slate-50 rounded-md text-xs font-mono text-slate-600 border border-slate-100">
-                                                {data.api_url}/webhook/whatsapp
-                                            </code>
-                                            <Button variant="outline" size="icon" onClick={handleCopyWebhook}>
-                                                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
