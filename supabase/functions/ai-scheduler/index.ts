@@ -33,6 +33,9 @@ serve(async (req) => {
     const payload = await req.json()
     const { action, clinic_id } = payload
 
+    console.log(`Action: ${action} | Clinic: ${clinic_id}`)
+    console.log('Payload:', JSON.stringify(payload, null, 2))
+
     if (!clinic_id) {
       return new Response(JSON.stringify({ error: 'clinic_id is required' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,7 +137,7 @@ serve(async (req) => {
       })
 
     } else if (action === 'book_appointment') {
-      const { doctor_id, date, time, patient_name, patient_phone } = payload
+      const { doctor_id, date, time, patient_name, patient_phone } = payload.payload || payload
 
       if (!doctor_id || !date || !time || !patient_name || !patient_phone) {
         return new Response(JSON.stringify({ error: 'Missing required fields (doctor_id, date, time, patient_name, patient_phone)' }), {
@@ -145,16 +148,27 @@ serve(async (req) => {
 
       // 1. Resolve Patient
       let patientId = null;
-      // Check if patient exists with this phone in this clinic
-      const { data: existingPatient } = await supabaseClient
-        .from('patients')
-        .select('id')
-        .eq('clinic_id', clinic_id)
-        .eq('phone', patient_phone)
-        .maybeSingle()
+      
+      // Normalize phone for searching (strip all non-digits)
+      const cleanPhone = patient_phone.replace(/\D/g, '');
+      const last9Digits = cleanPhone.slice(-9);
 
-      if (existingPatient) {
-        patientId = existingPatient.id
+      // Check if patient exists with this phone in this clinic
+      // We search for exact match or last 9 digits to be more flexible
+      const { data: existingPatients, error: searchError } = await supabaseClient
+        .from('patients')
+        .select('id, phone')
+        .eq('clinic_id', clinic_id)
+
+      if (searchError) throw searchError
+
+      const patient = existingPatients?.find(p => {
+        const pClean = (p.phone || '').replace(/\D/g, '');
+        return pClean === cleanPhone || (pClean.endsWith(last9Digits) && last9Digits.length >= 8);
+      });
+
+      if (patient) {
+        patientId = patient.id
       } else {
         // Insert new patient
         const { data: newPatient, error: newPatientError } = await supabaseClient
