@@ -238,7 +238,7 @@ function ChatsView() {
 
             <CardContent 
               ref={scrollRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/20 custom-scrollbar"
+              className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 bg-slate-50/20 custom-scrollbar"
             >
               {messagesLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -258,7 +258,7 @@ function ChatsView() {
                     <div 
                       key={msg.id || i}
                       className={cn(
-                        "flex gap-4 max-w-[85%]", // Removido motion para evitar bugs de scroll/altura
+                        "flex gap-4 max-w-[85%] min-w-0", // Adicionado min-w-0 aqui
                         isOutbound ? "ml-auto flex-row-reverse" : ""
                       )}
                     >
@@ -273,17 +273,17 @@ function ChatsView() {
                           <User className={cn("w-4 h-4", isOutbound ? "text-white" : "text-slate-400")} />
                         )}
                       </div>
-                      <div className={cn(
-                        "p-4 rounded-xl shadow-sm relative",
-                        isAI 
-                          ? "bg-teal-600 text-white rounded-tr-none" 
-                          : (isOutbound 
-                              ? "bg-slate-800 text-white rounded-tr-none"
-                              : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")
-                      )}>
-                        <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                  <div className={cn(
+                    "p-4 rounded-xl shadow-sm relative max-w-full overflow-hidden min-w-0",
+                    isAI 
+                      ? "bg-teal-600 text-white rounded-tr-none" 
+                      : (isOutbound 
+                          ? "bg-slate-800 text-white rounded-tr-none"
+                          : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")
+                  )}>
+                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-all">
                           {typeof msg.message === 'object' 
-                            ? (msg.message.content || msg.message.text || JSON.stringify(msg.message)) 
+                            ? (msg.message.content || msg.message.output || msg.message.text || JSON.stringify(msg.message)) 
                             : String(msg.message || '')
                           }
                         </p>

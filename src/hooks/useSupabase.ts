@@ -837,15 +837,36 @@ export function useChatMessages(leadId?: string) {
   }, [profile?.clinic_id]);
 
   const parseMessage = (msg: any): any => {
-    if (typeof msg === 'string') {
-      try {
-        const parsed = JSON.parse(msg);
-        return typeof parsed === 'object' ? parsed : { content: msg };
-      } catch {
-        return { content: msg };
+    try {
+      let data = msg;
+      
+      // Try to parse if it's a string
+      if (typeof msg === 'string' && (msg.startsWith('{') || msg.startsWith('['))) {
+        try { data = JSON.parse(msg); } catch { data = { content: msg }; }
       }
+
+      // Unwrap arrays
+      if (Array.isArray(data)) data = data[0] || {};
+
+      // If it's not an object, wrap it
+      if (!data || typeof data !== 'object') data = { content: String(msg || '') };
+
+      // Priority extraction of content
+      const rawContent = data.content || data.output || data.text || data.message || "";
+      
+      // Secondary cleaning of technical jargon just in case the DB trigger didn't catch it
+      let content = typeof rawContent === 'object' ? JSON.stringify(rawContent) : String(rawContent);
+      if (content.includes('[Used tools:')) {
+        content = content.replace(/\[Used tools:[\s\S]*?\]/g, '').trim();
+      }
+
+      return {
+        ...data,
+        content: content
+      };
+    } catch (e) {
+      return { content: String(msg || '') };
     }
-    return msg || {};
   };
 
   const fetch = useCallback(async () => {

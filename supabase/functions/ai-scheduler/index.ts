@@ -123,7 +123,12 @@ serve(async (req) => {
         }
       })
 
-      return new Response(JSON.stringify({ date, availability }), {
+      const readable_summary = availability.map(a => {
+        if (a.available_slots.length === 0) return `${a.doctor_name}: Sem horários disponíveis.`
+        return `${a.doctor_name}: Horários disponíveis às ${a.available_slots.join(', ')}.`
+      }).join('\n')
+
+      return new Response(JSON.stringify({ date, availability, readable_summary }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       })

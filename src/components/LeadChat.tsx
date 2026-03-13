@@ -17,6 +17,7 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
   const { update: updateLead } = useLeads();
   const [content, setContent] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
 
   // Solução Definitiva: MutationObserver para observar o DOM real
@@ -120,7 +121,7 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar relative block">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 bg-slate-50/50 custom-scrollbar relative block">
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin" />
@@ -143,18 +144,18 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
                 <div
                   key={msg.id}
                   className={cn(
-                    "flex flex-col max-w-[85%]",
+                    "flex flex-col max-w-[85%] min-w-0",
                     isOutbound ? "ml-auto items-end" : "mr-auto items-start"
                   )}
                 >
                   <div className={cn(
-                    "px-4 py-3 rounded-2xl text-sm shadow-sm",
+                    "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-all",
                     isOutbound 
                       ? (isAI ? "bg-teal-600 text-white rounded-tr-none" : "bg-white text-slate-800 border border-slate-200 rounded-tr-none")
                       : "bg-slate-200 text-slate-800 rounded-tl-none"
                   )}>
                     {typeof msg.message === 'object' 
-                      ? (msg.message.content || msg.message.text || JSON.stringify(msg.message)) 
+                      ? (msg.message.content || msg.message.output || msg.message.text || JSON.stringify(msg.message)) 
                       : String(msg.message || '')
                     }
                   </div>
