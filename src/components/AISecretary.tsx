@@ -116,7 +116,7 @@ function ConfirmationsView() {
     }
   }, [aiConfig, loading]);
 
-  if (loading || (!localConfig && aiConfig === undefined)) {
+  if (loading || !localConfig) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
