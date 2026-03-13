@@ -274,14 +274,14 @@ function ChatsView() {
                         )}
                       </div>
                   <div className={cn(
-                    "p-4 rounded-xl shadow-sm relative max-w-full overflow-hidden min-w-0",
+                    "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-words",
                     isAI 
                       ? "bg-teal-600 text-white rounded-tr-none" 
                       : (isOutbound 
                           ? "bg-slate-800 text-white rounded-tr-none"
                           : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")
                   )}>
-                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-all">
+                    <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words">
                           {typeof msg.message === 'object' 
                             ? (msg.message.content || msg.message.output || msg.message.text || JSON.stringify(msg.message)) 
                             : String(msg.message || '')

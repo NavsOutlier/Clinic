@@ -181,7 +181,7 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
                   )}
                 >
                   <div className={cn(
-                    "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-all",
+                    "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-words",
                     isOutbound 
                       ? (isAI ? "bg-teal-600 text-white rounded-tr-none" : "bg-white text-slate-800 border border-slate-200 rounded-tr-none")
                       : "bg-slate-200 text-slate-800 rounded-tl-none"
