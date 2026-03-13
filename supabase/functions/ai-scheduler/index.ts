@@ -53,7 +53,7 @@ serve(async (req) => {
       // Fetch doctors
       let doctorsQuery = supabaseClient
         .from('doctors')
-        .select('id, user_id, working_hours, consultation_duration, days_off, users(full_name)')
+        .select('id, user_id, name, working_hours, consultation_duration, days_off, users(full_name)')
         .eq('clinic_id', clinic_id)
         .eq('is_active', true)
 
@@ -89,7 +89,7 @@ serve(async (req) => {
         if (doc.days_off && doc.days_off.includes(date)) {
            return {
              doctor_id: doc.id,
-             doctor_name: doc.users?.full_name,
+             doctor_name: doc.name || doc.users?.full_name || 'Médico sem nome',
              available_slots: []
            }
         }
@@ -118,7 +118,7 @@ serve(async (req) => {
         
         return {
           doctor_id: doc.id,
-          doctor_name: doc.users?.full_name,
+          doctor_name: doc.name || doc.users?.full_name || 'Médico sem nome',
           available_slots: availableSlots
         }
       })
