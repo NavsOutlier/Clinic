@@ -18,6 +18,7 @@ import {
   Trash2,
   AlertCircle,
   Settings,
+  FileText
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,6 +43,8 @@ import { supabase } from "../lib/supabase";
 import { DoctorScheduleSettings } from "./DoctorScheduleSettings";
 import { PatientModal } from "./PatientModal";
 import { PatientSearchSelector } from "./PatientSearchSelector";
+import { CustomDropdown } from "./CustomDropdown";
+import { CustomDatePicker } from "./CustomDatePicker";
 
 function timeToMins(timeStr: string) {
   if (!timeStr) return 0;
@@ -53,6 +56,23 @@ function minsToTime(mins: number) {
   const h = Math.floor(mins / 60).toString().padStart(2, '0')
   const m = (mins % 60).toString().padStart(2, '0')
   return `${h}:${m}`
+}
+
+const DOCTOR_COLORS = [
+  { bg: "bg-teal-50", text: "text-teal-700", border: "border-teal-100", dot: "bg-teal-500", primary: "text-teal-600", badge: "bg-teal-100/50 text-teal-700" },
+  { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-100", dot: "bg-indigo-500", primary: "text-indigo-600", badge: "bg-indigo-100/50 text-indigo-700" },
+  { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-100", dot: "bg-rose-500", primary: "text-rose-600", badge: "bg-rose-100/50 text-rose-700" },
+  { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-100", dot: "bg-amber-500", primary: "text-amber-600", badge: "bg-amber-100/50 text-amber-700" },
+  { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500", primary: "text-emerald-600", badge: "bg-emerald-100/50 text-emerald-700" },
+  { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-100", dot: "bg-violet-500", primary: "text-violet-600", badge: "bg-violet-100/50 text-violet-700" },
+  { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-100", dot: "bg-sky-500", primary: "text-sky-600", badge: "bg-sky-100/50 text-sky-700" },
+];
+
+function getDoctorColor(doctorId: string) {
+  if (!doctorId) return DOCTOR_COLORS[0];
+  // Simple deterministic hash based on ID sum
+  const charSum = doctorId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return DOCTOR_COLORS[charSum % DOCTOR_COLORS.length];
 }
 
 export function Appointments() {
@@ -75,6 +95,8 @@ export function Appointments() {
   const [doctorToConfigure, setDoctorToConfigure] = useState<any>(null);
 
   const [showPatientModal, setShowPatientModal] = useState(false);
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentDoctor = useMemo(() => {
@@ -118,14 +140,30 @@ export function Appointments() {
   const filteredAppointments = useMemo(() => {
     return appointments.filter((apt) => {
       const patientName = apt.patient?.name || '';
+      const patientCpf = apt.patient?.cpf || '';
+      const patientPhone = apt.patient?.phone || '';
       const doctorName = apt.doctor?.name || '';
 
-      const matchesSearch = !searchTerm || patientName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = !searchTerm || 
+        patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        patientCpf.includes(searchTerm) ||
+        patientPhone.includes(searchTerm);
+        
       const matchesDoctor = filter === "Todos" || doctorName.includes(filter);
       const matchesDate = dateFilter === "today" ? apt.date === format(new Date(), 'yyyy-MM-dd') : true;
       return matchesSearch && matchesDoctor && matchesDate;
     });
   }, [appointments, filter, dateFilter, searchTerm]);
+
+  const selectedDayAppointments = useMemo(() => {
+    if (!selectedDay) return [];
+    return appointments.filter(apt => apt.date === selectedDay);
+  }, [appointments, selectedDay]);
+
+  const handleDayClick = (date: string) => {
+    setSelectedDay(date);
+    setShowDayModal(true);
+  };
 
   const handleSubmit = async () => {
     if (!formData.patient_id || !formData.doctor_id || !formData.date || !formData.time) return;
@@ -298,12 +336,23 @@ export function Appointments() {
                               <span className="font-semibold text-slate-800">{apt.patient?.name || '—'}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 font-medium text-slate-600">
-                            <div className="flex items-center gap-2"><Stethoscope className="w-3.5 h-3.5 text-teal-600" />{apt.doctor?.name || '—'}</div>
+                          <td className="px-6 py-4 font-medium">
+                            <div className={cn(
+                              "inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs font-bold",
+                              getDoctorColor(apt.doctor_id).bg,
+                              getDoctorColor(apt.doctor_id).text,
+                              getDoctorColor(apt.doctor_id).border
+                            )}>
+                              <Stethoscope className="w-3.5 h-3.5" />
+                              {apt.doctor?.name || '—'}
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
-                              <span className="flex items-center text-slate-700 font-semibold text-sm"><CalendarIcon className="w-3.5 h-3.5 mr-2 text-teal-600" />{format(parseISO(apt.date), 'dd/MM/yyyy')}</span>
+                              <span className="flex items-center text-slate-700 font-semibold text-sm">
+                                <CalendarIcon className={cn("w-3.5 h-3.5 mr-2", getDoctorColor(apt.doctor_id).primary)} />
+                                {format(parseISO(apt.date), 'dd/MM/yyyy')}
+                              </span>
                               <span className="flex items-center text-slate-400 font-medium text-xs mt-0.5"><Clock className="w-3 h-3 mr-1.5" />{apt.time?.substring(0, 5)}</span>
                             </div>
                           </td>
@@ -333,7 +382,12 @@ export function Appointments() {
               </motion.div>
             ) : (
               <motion.div key="calendar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6">
-                <CalendarView currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} appointments={filteredAppointments} />
+                <CalendarView 
+                  currentMonth={currentMonth} 
+                  setCurrentMonth={setCurrentMonth} 
+                  appointments={filteredAppointments}
+                  onDayClick={handleDayClick}
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -348,7 +402,7 @@ export function Appointments() {
       <AnimatePresence>
         {showModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between p-6 border-b border-slate-100">
                 <h3 className="text-lg font-bold text-slate-900">{selectedAppointment ? 'Editar Consulta' : 'Nova Consulta'}</h3>
                 <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
@@ -365,35 +419,37 @@ export function Appointments() {
                     lastCreatedPatient={lastCreatedPatient}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Médico *</label>
-                  <select value={formData.doctor_id} onChange={e => setFormData(p => ({ ...p, doctor_id: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm">
-                    <option value="">Selecione...</option>
-                    {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Data *</label>
-                    <input type="date" value={formData.date} onChange={e => setFormData(p => ({ ...p, date: e.target.value, time: '' }))} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
-                    <select value={formData.status} onChange={e => setFormData(p => ({ ...p, status: e.target.value as any }))} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm">
-                      {Object.entries(statusLabel).map(([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <CustomDropdown
+                    label="Médico *"
+                    icon={Stethoscope}
+                    value={formData.doctor_id}
+                    onChange={val => setFormData(p => ({ ...p, doctor_id: val }))}
+                    options={doctors.map(d => ({ value: d.id, label: d.name }))}
+                    placeholder="Selecione..."
+                  />
+                  <CustomDatePicker
+                    label="Data *"
+                    value={formData.date}
+                    onChange={val => setFormData(p => ({ ...p, date: val, time: '' }))}
+                  />
                 </div>
 
+                <CustomDropdown
+                  label="Status"
+                  icon={Settings}
+                  value={formData.status}
+                  onChange={val => setFormData(p => ({ ...p, status: val as any }))}
+                  options={Object.entries(statusLabel).map(([value, label]) => ({ value, label }))}
+                />
+
                 {formData.doctor_id && formData.date && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Horário *</label>
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Horário *</label>
                     {availableSlots === null ? (
-                       <p className="text-sm text-slate-500">Selecione médico e data.</p>
+                       <p className="text-sm text-slate-400 ml-1 font-medium italic">Selecione médico e data para ver horários.</p>
                      ) : availableSlots.length === 0 ? (
-                       <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 text-sm font-medium flex items-center">
+                       <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm font-bold flex items-center">
                           <AlertCircle className="w-4 h-4 mr-2" />
                           Esse médico não atende nesta data.
                        </div>
@@ -405,10 +461,10 @@ export function Appointments() {
                              type="button"
                              onClick={() => setFormData(p => ({ ...p, time: slot }))}
                              className={cn(
-                               "py-2 text-sm font-semibold rounded-lg transition-all border",
+                               "py-2.5 text-xs font-bold rounded-lg transition-all border",
                                formData.time === slot
-                                 ? "bg-teal-600 text-white border-teal-600"
-                                 : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700 hover:bg-teal-50"
+                                 ? "bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-200"
+                                 : "bg-white text-slate-600 border-slate-200 hover:border-teal-400 hover:text-teal-700 hover:bg-teal-50 active:scale-95"
                              )}
                            >
                              {slot}
@@ -420,8 +476,11 @@ export function Appointments() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Observações</label>
-                  <textarea value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} rows={2} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm resize-none" placeholder="Observações opcionais..." />
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Observações</label>
+                  <div className="group/field flex items-start gap-3 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus-within:border-teal-400 focus-within:ring-4 focus-within:ring-teal-100/30 focus-within:bg-white transition-all duration-300">
+                    <FileText className="w-4 h-4 text-slate-400 mt-1 group-focus-within/field:text-teal-500 transition-colors" />
+                    <textarea value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} rows={2} className="flex-1 bg-transparent border-none outline-none text-sm font-bold text-slate-700 resize-none placeholder:text-slate-300" placeholder="Observações opcionais..." />
+                  </div>
                 </div>
 
                 {error && (
@@ -488,12 +547,79 @@ export function Appointments() {
         onClose={() => setShowPatientModal(false)}
         onSuccess={handlePatientSuccess}
       />
+
+      {/* Day Appointments Modal */}
+      <AnimatePresence>
+        {showDayModal && selectedDay && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" onClick={() => setShowDayModal(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 capitalize">
+                    {format(parseISO(selectedDay), "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium">{selectedDayAppointments.length} agendamentos para este dia</p>
+                </div>
+                <button onClick={() => setShowDayModal(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-all"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar">
+                {selectedDayAppointments.length === 0 ? (
+                  <div className="text-center py-10 opacity-50">
+                    <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                    <p className="font-semibold">Nenhuma consulta agendada.</p>
+                  </div>
+                ) : (
+                  selectedDayAppointments.map((apt) => {
+                    const docColor = getDoctorColor(apt.doctor_id);
+                    return (
+                      <div key={apt.id} className={cn(
+                        "p-4 border rounded-xl flex items-center justify-between group hover:shadow-md transition-all",
+                        docColor.bg,
+                        docColor.border,
+                        "hover:bg-white"
+                      )}>
+                        <div className="flex items-center gap-4">
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm", docColor.bg, docColor.text, "border", docColor.border)}>
+                            {apt.time?.substring(0, 5)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900">{apt.patient?.name}</p>
+                            <p className={cn("text-[10px] font-bold flex items-center gap-1.5 uppercase tracking-wider", docColor.text)}>
+                              <Stethoscope className="w-3 h-3" /> {apt.doctor?.name}
+                            </p>
+                          </div>
+                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold border uppercase", statusColor[apt.status] || statusColor.pendente)}>
+                          {statusLabel[apt.status] || apt.status}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => { setShowDayModal(false); openEditModal(apt); }} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => { setShowDayModal(false); openDeleteConfirm(apt); }} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              </div>
+
+              <div className="p-6 border-t border-slate-100 bg-slate-50">
+                <Button className="w-full py-6 font-bold" onClick={() => { setShowDayModal(false); setFormData({ patient_id: '', doctor_id: '', date: selectedDay!, time: '', notes: '', status: 'pendente' }); setShowModal(true); }}>
+                  <Plus className="w-5 h-5 mr-2" /> Agendar Nova Consulta
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function CalendarView({ currentMonth, setCurrentMonth, appointments }: {
-  currentMonth: Date, setCurrentMonth: (d: Date) => void, appointments: any[]
+function CalendarView({ currentMonth, setCurrentMonth, appointments, onDayClick }: {
+  currentMonth: Date, setCurrentMonth: (d: Date) => void, appointments: any[], onDayClick: (date: string) => void
 }) {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -513,21 +639,42 @@ function CalendarView({ currentMonth, setCurrentMonth, appointments }: {
           <div key={day} className="text-center py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{day}</div>
         ))}
         {calendarDays.map((date, i) => {
-          const dayApts = appointments.filter(apt => apt.date === format(date, 'yyyy-MM-dd'));
+          const formattedDate = format(date, 'yyyy-MM-dd');
+          const dayApts = appointments.filter(apt => apt.date === formattedDate);
           const isCurrentMonth = isSameMonth(date, monthStart);
           const isTodayDate = isToday(date);
           return (
-            <div key={date.toString()} className={cn("min-h-[90px] p-2 rounded-lg border transition-all", isCurrentMonth ? "bg-white border-slate-100" : "bg-slate-50/50 border-transparent opacity-40", isTodayDate && "ring-2 ring-teal-500/30 border-teal-500 shadow-sm")}>
+            <div 
+              key={date.toString()} 
+              onClick={() => isCurrentMonth && onDayClick(formattedDate)}
+              className={cn(
+                "min-h-[90px] p-2 rounded-lg border transition-all cursor-pointer", 
+                isCurrentMonth ? "bg-white border-slate-100 hover:border-teal-300 hover:shadow-md" : "bg-slate-50/50 border-transparent opacity-40 cursor-default", 
+                isTodayDate && "ring-2 ring-teal-500/30 border-teal-500 shadow-sm"
+              )}
+            >
               <div className="flex justify-between items-start mb-1">
                 <span className={cn("w-7 h-7 flex items-center justify-center rounded-md text-sm font-bold", isTodayDate ? "bg-teal-600 text-white" : "text-slate-400")}>{format(date, 'd')}</span>
-                {dayApts.length > 0 && isCurrentMonth && <span className="w-2 h-2 rounded-full bg-teal-500" />}
+                <div className="flex gap-0.5">
+                  {Array.from(new Set(dayApts.map(a => a.doctor_id))).map(docId => (
+                    <span key={docId} className={cn("w-2 h-2 rounded-full", getDoctorColor(docId).dot)} />
+                  ))}
+                </div>
               </div>
               <div className="space-y-1 mt-1">
-                {dayApts.slice(0, 3).map(apt => (
-                  <div key={apt.id} className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded truncate", apt.status === "confirmado" ? "bg-teal-50 text-teal-700" : "bg-amber-50 text-amber-700")}>
-                    {apt.time?.substring(0, 5)} - {apt.patient?.name?.split(' ')[0] || '?'}
-                  </div>
-                ))}
+                {dayApts.slice(0, 3).map(apt => {
+                  const docColor = getDoctorColor(apt.doctor_id);
+                  return (
+                    <div key={apt.id} className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded truncate border", 
+                      docColor.bg,
+                      docColor.text,
+                      docColor.border
+                    )}>
+                      {apt.time?.substring(0, 5)} - {apt.patient?.name?.split(' ')[0] || '?'}
+                    </div>
+                  );
+                })}
                 {dayApts.length > 3 && <div className="text-[10px] font-bold text-slate-400">+{dayApts.length - 3} mais</div>}
               </div>
             </div>

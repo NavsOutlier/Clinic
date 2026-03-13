@@ -203,7 +203,7 @@ export function useAppointments() {
     
     let query = supabase
       .from('appointments')
-      .select('*, patient:patients(name), doctor:doctors!inner(name, user_id)')
+      .select('*, patient:patients(name, cpf, phone), doctor:doctors!inner(name, user_id)')
       .eq('clinic_id', profile.clinic_id);
 
     if (userRole === 'medico') {
@@ -244,7 +244,7 @@ export function useAppointments() {
     const { data, error } = await supabase
       .from('appointments')
       .insert({ ...apt, clinic_id: profile.clinic_id })
-      .select('*, patient:patients(name), doctor:doctors!inner(name, user_id)')
+      .select('*, patient:patients(name, cpf, phone), doctor:doctors!inner(name, user_id)')
       .single();
     if (error) { setError(error.message); return null; }
     return data;
