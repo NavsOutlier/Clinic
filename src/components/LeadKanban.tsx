@@ -193,16 +193,14 @@ export function LeadKanban() {
           const stageTotal = stageLeads.reduce((sum, l) => sum + (Number(l.estimated_value) || 0), 0);
           return (
             <div key={stage.id} className="w-[300px] shrink-0 flex flex-col gap-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <div className={cn("w-2 h-2 rounded-full", stageColors[stage.color || 'bg-slate-500'] || 'bg-slate-500')} />
-                  <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{stage.name}</h3>
-                  <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{stageLeads.length}</span>
-                </div>
-                <span className="text-[10px] font-bold text-slate-500">
+              <div className="flex items-center gap-2 px-2">
+                <div className={cn("w-2 h-2 shrink-0 rounded-full", stageColors[stage.color || 'bg-slate-500'] || 'bg-slate-500')} />
+                <h3 className="font-bold text-slate-700 text-xs uppercase tracking-wider truncate flex-1">{stage.name}</h3>
+                <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0">{stageLeads.length}</span>
+                <span className="text-[10px] font-bold text-slate-400 shrink-0">
                   R$ {stageTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <button className="text-slate-400 hover:text-slate-600" onClick={() => { setSelectedLead(null); setFormData({ name: '', phone: '', source: 'manual', stage_id: stage.id, estimated_value: String(aiConfig?.default_ticket_value ?? ''), loss_reason: '' }); setShowModal(true); }}>
+                <button className="text-slate-400 hover:text-slate-600 shrink-0" onClick={() => { setSelectedLead(null); setFormData({ name: '', phone: '', source: 'manual', stage_id: stage.id, estimated_value: String(aiConfig?.default_ticket_value ?? ''), loss_reason: '' }); setShowModal(true); }}>
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -221,7 +219,7 @@ export function LeadKanban() {
                   const semMotivo = isPerdido && !lead.loss_reason;
                   const lastContact = lead.last_message_at ?? lead.created_at;
                   const slaBreach = (() => {
-                    if (!aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at || isPerdido) return 0;
+                    if (!aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at) return 0;
                     const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours);
                     return Math.floor(mins / aiConfig.sla_minutes);
                   })();
@@ -269,7 +267,7 @@ export function LeadKanban() {
                     )}
 
                     {/* Badges de status */}
-                    {!isPerdido && (aguardando || !!lead.last_message_at) && (
+                    {(aguardando || !!lead.last_message_at) && (
                       <div className="flex items-center gap-1.5 mt-2">
                         {aguardando && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-blue-50 border-blue-200 text-blue-600">
