@@ -710,6 +710,8 @@ export interface AIConfig {
   handoff_enabled: boolean;
   handoff_triggers: string[];
   handoff_message: string;
+  sla_minutes: number;
+  business_hours: { start: string; end: string; days: number[] };
   updated_at: string;
 }
 

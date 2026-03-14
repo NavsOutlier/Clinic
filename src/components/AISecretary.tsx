@@ -763,10 +763,29 @@ function HandoffView() {
           </h3>
           <p className="text-sm text-slate-500 mt-0.5">Configure quando a IA deve parar e transferir para o suporte humano</p>
         </div>
-        <Button onClick={addRule} className="bg-amber-500 hover:bg-amber-600 text-white gap-2 shrink-0">
-          <Plus className="w-4 h-4" />
-          Adicionar Gatilho
-        </Button>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              {aiConfig?.handoff_enabled ? 'Ativo' : 'Inativo'}
+            </span>
+            <button
+              onClick={() => updateAI({ ...(aiConfig || {}), handoff_enabled: !aiConfig?.handoff_enabled } as any)}
+              className={cn(
+                "w-10 h-5 rounded-full relative transition-all",
+                aiConfig?.handoff_enabled ? "bg-amber-500" : "bg-slate-300"
+              )}
+            >
+              <div className={cn(
+                "w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm",
+                aiConfig?.handoff_enabled ? "right-[3px]" : "left-[3px]"
+              )} />
+            </button>
+          </div>
+          <Button onClick={addRule} className="bg-amber-500 hover:bg-amber-600 text-white gap-2">
+            <Plus className="w-4 h-4" />
+            Adicionar Gatilho
+          </Button>
+        </div>
       </div>
 
       {rules.length === 0 ? (
@@ -793,23 +812,80 @@ function HandoffView() {
           </Button>
         </>
       )}
+
+      <div className="flex flex-col gap-6 mt-2">
+        <div className="p-6 rounded-2xl bg-amber-50 border border-amber-100 relative overflow-hidden">
+          <div className="relative z-10">
+            <h4 className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
+              <UserCheck className="w-4 h-4" />
+              Como funciona o Handoff?
+            </h4>
+            <p className="text-xs text-amber-800 leading-relaxed font-medium">
+              Quando um dos gatilhos configurados é detectado na conversa, a IA pausa o atendimento e transfere o lead para um agente humano. A mensagem de despedida é enviada automaticamente ao lead e a equipe é notificada para dar sequência.
+            </p>
+          </div>
+          <UserCheck className="absolute -right-4 -bottom-4 w-24 h-24 text-amber-200/50 rotate-12" />
+        </div>
+
+        {rules.length > 0 && rules.some((r: HandoffRule) => r.farewell_enabled && r.farewell_message) && (
+          <Card className="border border-slate-100 shadow-sm bg-slate-50/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-tighter flex items-center gap-2">
+                <MessageSquare className="w-3 h-3" />
+                Preview da Mensagem de Despedida
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 max-w-[85%] relative">
+                <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                  {rules.find((r: HandoffRule) => r.farewell_enabled && r.farewell_message)?.farewell_message?.replace(/{paciente}/g, 'João') ?? ''}
+                </p>
+                <span className="text-[9px] text-slate-400 font-bold uppercase mt-2 block">10:45</span>
+                <div className="absolute -left-2 top-4 w-4 h-4 bg-white border-l border-b border-slate-100 rotate-45" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
 
 export function AISecretary() {
   const [activeTab, setActiveTab] = useState<"chats" | "leads" | "dashboard" | "config" | "confirmations" | "followups" | "handoff">("chats");
+  const { aiConfig, updateAI } = useSettings();
 
   return (
     <div className="space-y-8 h-full flex flex-col">
       <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-            Assistente <span className="text-teal-600">IA</span>
-          </h2>
-          <p className="text-slate-500 font-medium text-base">
-            Gestão inteligente de agendamentos e pacientes.
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+              Assistente <span className="text-teal-600">IA</span>
+            </h2>
+            <p className="text-slate-500 font-medium text-base">
+              Gestão inteligente de agendamentos e pacientes.
+            </p>
+          </div>
+          {aiConfig && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                {aiConfig.auto_schedule ? 'IA Ativa' : 'IA Pausada'}
+              </span>
+              <button
+                onClick={() => updateAI({ ...aiConfig, auto_schedule: !aiConfig.auto_schedule })}
+                className={cn(
+                  "w-12 h-6 rounded-full relative transition-all",
+                  aiConfig.auto_schedule ? "bg-teal-600" : "bg-slate-300"
+                )}
+              >
+                <div className={cn(
+                  "w-4 h-4 bg-white rounded-full absolute top-1 transition-all shadow-sm",
+                  aiConfig.auto_schedule ? "right-1" : "left-1"
+                )} />
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto scrollbar-hide gap-1 w-full">
           {[
@@ -1180,74 +1256,72 @@ function ConfigView() {
       </Card>
 
       <div className="space-y-8">
-        <Card className="border border-slate-200 shadow-sm overflow-hidden">
-          <div className="h-1.5 bg-teal-600" />
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-slate-900">Regras de Automação</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="pr-4">
-                <p className="text-sm font-bold text-slate-900">
-                  Atendimento Automático (IA)
-                </p>
-                <p className="text-[10px] font-semibold text-slate-500 uppercase pt-0.5">
-                  Interruptor geral de respostas da inteligência artificial
-                </p>
-              </div>
-              <button 
-                onClick={() => setLocalConfig({ ...localConfig, auto_schedule: !localConfig.auto_schedule })}
-                className={cn(
-                  "w-12 h-6 rounded-full relative transition-all",
-                  localConfig.auto_schedule ? "bg-teal-600" : "bg-slate-300"
-                )}
-              >
-                <div className={cn(
-                  "w-4 h-4 bg-white rounded-full absolute top-1 transition-all shadow-sm",
-                  localConfig.auto_schedule ? "right-1" : "left-1"
-                )}></div>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card className="border border-slate-200 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-teal-600" />
-              Métricas de Sucesso
+              <Clock className="w-5 h-5 text-teal-600" />
+              SLA e Expediente
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-              <div className="flex justify-between items-end mb-2 px-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Tabela de Resolução</span>
-                <span className="text-lg font-bold text-slate-900">92%</span>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Tempo de resposta (SLA)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={localConfig.sla_minutes ?? 120}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, sla_minutes: Number(e.target.value) })}
+                  className="w-24 px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
+                />
+                <span className="text-sm text-slate-500 font-medium">minutos</span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: "92%" }}
-                  transition={{ duration: 1 }}
-                  className="bg-teal-600 h-full rounded-full"
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Início do expediente</label>
+                <input
+                  type="time"
+                  value={localConfig.business_hours?.start ?? '08:00'}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { end: '18:00', days: [1,2,3,4,5] }), start: e.target.value } })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Fim do expediente</label>
+                <input
+                  type="time"
+                  value={localConfig.business_hours?.end ?? '18:00'}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { start: '08:00', days: [1,2,3,4,5] }), end: e.target.value } })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
                 />
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
-                <div className="text-xs font-semibold text-slate-500 uppercase">Conversas</div>
-                <div className="text-2xl font-bold text-slate-900">100+</div>
-                <div className="text-[10px] font-medium text-teal-600 uppercase">Atendidas</div>
-              </div>
-              <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
-                <div className="text-xs font-semibold text-slate-500 uppercase">Satisfação</div>
-                <div className="text-2xl font-bold text-slate-900">4.9/5</div>
-                <div className="text-[10px] font-medium text-teal-600 uppercase">Avaliação</div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Dias de atendimento</label>
+              <div className="flex gap-1.5 flex-wrap">
+                {['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map((d, i) => {
+                  const days: number[] = localConfig.business_hours?.days ?? [1,2,3,4,5];
+                  const active = days.includes(i);
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        const newDays = active ? days.filter(x => x !== i) : [...days, i].sort();
+                        setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { start: '08:00', end: '18:00' }), days: newDays } });
+                      }}
+                      className={cn(
+                        "px-2.5 py-1 rounded text-xs font-bold border transition-all",
+                        active ? "bg-teal-50 border-teal-600 text-teal-700" : "bg-white border-slate-200 text-slate-400 hover:border-teal-200"
+                      )}
+                    >{d}</button>
+                  );
+                })}
               </div>
             </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   );

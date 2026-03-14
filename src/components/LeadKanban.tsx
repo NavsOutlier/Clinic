@@ -16,7 +16,40 @@ import {
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { useFunnelStages, useLeads } from "../hooks/useSupabase";
+import { useFunnelStages, useLeads, useSettings } from "../hooks/useSupabase";
+
+function calcBusinessMinutes(since: Date, bh: { start: string; end: string; days: number[] }): number {
+  const now = new Date();
+  if (since >= now) return 0;
+  const [sh, sm] = bh.start.split(':').map(Number);
+  const [eh, em] = bh.end.split(':').map(Number);
+  const startMins = sh * 60 + sm;
+  const endMins = eh * 60 + em;
+  if (endMins <= startMins) return 0;
+  let total = 0;
+  const cur = new Date(since);
+  // Snap to start of business if currently before business hours
+  const curMins = cur.getHours() * 60 + cur.getMinutes();
+  if (bh.days.includes(cur.getDay()) && curMins < startMins) {
+    cur.setHours(sh, sm, 0, 0);
+  }
+  let guard = 0;
+  while (cur < now && guard++ < 10000) {
+    const dow = cur.getDay();
+    if (bh.days.includes(dow)) {
+      const mins = cur.getHours() * 60 + cur.getMinutes();
+      if (mins >= startMins && mins < endMins) {
+        const remaining = Math.min(endMins - mins, (now.getTime() - cur.getTime()) / 60000);
+        total += remaining;
+        cur.setHours(eh, em, 0, 0);
+        continue;
+      }
+    }
+    cur.setDate(cur.getDate() + 1);
+    cur.setHours(sh, sm, 0, 0);
+  }
+  return total;
+}
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LeadChat } from "./LeadChat";
@@ -24,6 +57,7 @@ import { LeadChat } from "./LeadChat";
 export function LeadKanban() {
   const { data: stages, loading: stagesLoading, reorder: reorderStages, update: updateStage, create: createStage, remove: removeStage } = useFunnelStages();
   const { data: leads, loading: leadsLoading, create, update, remove } = useLeads();
+  const { aiConfig } = useSettings();
   const [showModal, setShowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -181,6 +215,12 @@ export function LeadKanban() {
                 {stageLeads.map((lead) => {
                   const isPerdido = stage.name === 'Perdido';
                   const semMotivo = isPerdido && !lead.loss_reason;
+                  const lastContact = lead.last_message_at ?? lead.created_at;
+                  const slaBreach = (() => {
+                    if (!aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at || isPerdido) return 0;
+                    const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours);
+                    return Math.floor(mins / aiConfig.sla_minutes);
+                  })();
                   return (
                   <motion.div
                     key={lead.id}
@@ -223,8 +263,18 @@ export function LeadKanban() {
                         R$ {Number(lead.estimated_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                       <div className="flex items-center gap-2">
+                        {slaBreach > 0 && (
+                          <span className={cn(
+                            "text-[9px] font-bold px-1.5 py-0.5 rounded border",
+                            slaBreach === 1
+                              ? "bg-amber-50 border-amber-200 text-amber-700"
+                              : "bg-rose-50 border-rose-100 text-rose-700"
+                          )}>
+                            {slaBreach}× SLA
+                          </span>
+                        )}
                         <span className="text-[9px] font-medium text-slate-400">
-                          {formatDistanceToNow(parseISO(lead.created_at), { addSuffix: true, locale: ptBR })}
+                          {formatDistanceToNow(parseISO(lastContact), { addSuffix: true, locale: ptBR })}
                         </span>
                         <button
                           onClick={() => setChatLead(lead)}
