@@ -180,7 +180,7 @@ export function LeadKanban() {
           <Button variant="outline" size="icon" className="h-10 w-10 text-slate-400 hover:text-teal-600" onClick={() => { setLocalStages([...stages]); setShowSettingsModal(true); }}>
             <Settings className="w-5 h-5" />
           </Button>
-          <Button className="py-5 px-6 group" onClick={() => { setSelectedLead(null); setFormData({ name: '', phone: '', source: 'manual', stage_id: stages[0]?.id || '', estimated_value: '' }); setShowModal(true); }}>
+          <Button className="py-5 px-6 group" onClick={() => { setSelectedLead(null); setFormData({ name: '', phone: '', source: 'manual', stage_id: stages[0]?.id || '', estimated_value: String(aiConfig?.default_ticket_value ?? ''), loss_reason: '' }); setShowModal(true); }}>
             <Plus className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform" />
             Novo Lead
           </Button>
@@ -190,6 +190,7 @@ export function LeadKanban() {
       <div className="flex gap-4 overflow-x-auto pb-4 h-full custom-scrollbar min-h-[600px]">
         {stages.map((stage) => {
           const stageLeads = leads.filter(l => l.stage_id === stage.id);
+          const stageTotal = stageLeads.reduce((sum, l) => sum + (Number(l.estimated_value) || 0), 0);
           return (
             <div key={stage.id} className="w-[300px] shrink-0 flex flex-col gap-4">
               <div className="flex items-center justify-between px-2">
@@ -198,7 +199,10 @@ export function LeadKanban() {
                   <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">{stage.name}</h3>
                   <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-md">{stageLeads.length}</span>
                 </div>
-                <button className="text-slate-400 hover:text-slate-600" onClick={() => { setFormData(p => ({ ...p, stage_id: stage.id })); setShowModal(true); }}>
+                <span className="text-[10px] font-bold text-slate-500">
+                  R$ {stageTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                <button className="text-slate-400 hover:text-slate-600" onClick={() => { setSelectedLead(null); setFormData({ name: '', phone: '', source: 'manual', stage_id: stage.id, estimated_value: String(aiConfig?.default_ticket_value ?? ''), loss_reason: '' }); setShowModal(true); }}>
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
@@ -221,6 +225,9 @@ export function LeadKanban() {
                     const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours);
                     return Math.floor(mins / aiConfig.sla_minutes);
                   })();
+                  const aguardando = !isPerdido && !!lead.last_outbound_at && (
+                    !lead.last_message_at || parseISO(lead.last_outbound_at) > parseISO(lead.last_message_at)
+                  );
                   return (
                   <motion.div
                     key={lead.id}
@@ -233,13 +240,16 @@ export function LeadKanban() {
                       isPerdido ? "border-rose-200" : "border-slate-200"
                     )}
                   >
-                    <div className="flex justify-between items-center mb-1">
+                    {/* Header: fonte + ações */}
+                    <div className="flex justify-between items-center mb-1.5">
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{lead.source || 'Manual'}</span>
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEditModal(lead)} className="p-0.5 text-slate-400 hover:text-teal-600 rounded transition-colors"><Edit2 className="w-3 h-3" /></button>
                         <button onClick={() => openDeleteConfirm(lead)} className="p-0.5 text-slate-400 hover:text-rose-600 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
                       </div>
                     </div>
+
+                    {/* Nome + telefone */}
                     <h4 className="font-bold text-slate-900 text-sm leading-tight">{lead.name}</h4>
                     {lead.phone && (
                       <p className="text-[10px] font-medium text-slate-400 mt-0.5">{lead.phone}</p>
@@ -248,7 +258,7 @@ export function LeadKanban() {
                     {/* Motivo da perda */}
                     {isPerdido && (
                       <div className={cn(
-                        "mt-1.5 px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1.5",
+                        "mt-2 px-2 py-1 rounded text-[9px] font-bold flex items-center gap-1.5",
                         semMotivo
                           ? "bg-amber-50 border border-amber-200 text-amber-700"
                           : "bg-rose-50 border border-rose-100 text-rose-700"
@@ -258,21 +268,35 @@ export function LeadKanban() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                      <div className="bg-teal-50 text-teal-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-teal-100">
-                        R$ {Number(lead.estimated_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {slaBreach > 0 && (
+                    {/* Badges de status */}
+                    {!isPerdido && (aguardando || !!lead.last_message_at) && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        {aguardando && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-blue-50 border-blue-200 text-blue-600">
+                            Aguardando
+                          </span>
+                        )}
+                        {!!lead.last_message_at && (
                           <span className={cn(
                             "text-[9px] font-bold px-1.5 py-0.5 rounded border",
-                            slaBreach === 1
+                            slaBreach === 0
+                              ? "bg-slate-50 border-slate-200 text-slate-400"
+                              : slaBreach === 1
                               ? "bg-amber-50 border-amber-200 text-amber-700"
                               : "bg-rose-50 border-rose-100 text-rose-700"
                           )}>
                             {slaBreach}× SLA
                           </span>
                         )}
+                      </div>
+                    )}
+
+                    {/* Footer: valor | tempo + chat */}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                      <div className="bg-teal-50 text-teal-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-teal-100">
+                        R$ {Number(lead.estimated_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                      <div className="flex items-center gap-1.5">
                         <span className="text-[9px] font-medium text-slate-400">
                           {formatDistanceToNow(parseISO(lastContact), { addSuffix: true, locale: ptBR })}
                         </span>

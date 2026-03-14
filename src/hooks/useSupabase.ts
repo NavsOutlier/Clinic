@@ -290,6 +290,8 @@ export interface Lead {
   estimated_value: number | null;
   notes: string | null;
   ai_enabled: boolean;
+  last_message_at: string | null;
+  last_outbound_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -712,6 +714,7 @@ export interface AIConfig {
   handoff_message: string;
   sla_minutes: number;
   business_hours: { start: string; end: string; days: number[] };
+  default_ticket_value: number;
   updated_at: string;
 }
 

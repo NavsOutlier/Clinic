@@ -27,6 +27,7 @@ import {
   Search,
   Plus,
   Trash2,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -102,13 +103,17 @@ function ValidationModal({ isOpen, onClose, missingTags }: { isOpen: boolean, on
 function ConfirmationsView() {
   const { aiConfig, updateAI, loading } = useSettings();
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [localConfig, setLocalConfig] = useState<any>(null);
   const [showValidation, setShowValidation] = useState(false);
   const [missingTags, setMissingTags] = useState<string[]>([]);
 
+  const setConfig = (updates: any) => { setLocalConfig((p: any) => ({ ...p, ...updates })); setIsDirty(true); };
+
   useEffect(() => {
     if (aiConfig) {
       setLocalConfig({ ...aiConfig });
+      setIsDirty(false);
     } else if (!loading) {
       // Initialize with defaults if config doesn't exist yet
       setLocalConfig({
@@ -143,6 +148,7 @@ function ConfirmationsView() {
     setSaving(true);
     await updateAI(localConfig);
     setSaving(false);
+    setIsDirty(false);
   };
 
   return (
@@ -173,8 +179,8 @@ function ConfirmationsView() {
                 Ativar envio automático via WhatsApp
               </p>
             </div>
-            <button 
-              onClick={() => setLocalConfig({ ...localConfig, confirm_enabled: !localConfig.confirm_enabled })}
+            <button
+              onClick={() => { const v = !localConfig.confirm_enabled; setLocalConfig({ ...localConfig, confirm_enabled: v }); updateAI({ ...localConfig, confirm_enabled: v }); }}
               className={cn(
                 "w-12 h-6 rounded-full relative transition-all",
                 localConfig.confirm_enabled ? "bg-teal-600" : "bg-slate-300"
@@ -196,7 +202,7 @@ function ConfirmationsView() {
               <input
                 type="number"
                 value={localConfig.confirm_lead_time || ""}
-                onChange={(e) => setLocalConfig({ ...localConfig, confirm_lead_time: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setConfig({ confirm_lead_time: parseInt(e.target.value) || 0 })}
                 className="w-32 px-4 py-2 border border-slate-200 rounded-lg font-bold text-teal-700 focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
                 placeholder="Ex: 1440"
               />
@@ -216,7 +222,7 @@ function ConfirmationsView() {
                 <button
                   key={shortcut.val}
                   type="button"
-                  onClick={() => setLocalConfig({ ...localConfig, confirm_lead_time: shortcut.val })}
+                  onClick={() => setConfig({ confirm_lead_time: shortcut.val })}
                   className="px-2 py-1.5 rounded-md border border-slate-100 bg-slate-50 text-[9px] font-bold text-slate-500 hover:bg-slate-100 transition-colors uppercase"
                 >
                   Sugestão: {shortcut.label}
@@ -234,7 +240,7 @@ function ConfirmationsView() {
             <textarea
               rows={5}
               value={localConfig.confirm_message || ""}
-              onChange={(e) => setLocalConfig({ ...localConfig, confirm_message: e.target.value })}
+              onChange={(e) => setConfig({ confirm_message: e.target.value })}
               className="w-full p-4 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all resize-none text-sm leading-relaxed"
               placeholder="Use {paciente}, {data} e {hora} para personalizar..."
             />
@@ -243,12 +249,12 @@ function ConfirmationsView() {
             </p>
           </div>
 
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6"
+          <Button
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+            className={cn("w-full py-6 transition-all", isDirty ? "bg-teal-600 hover:bg-teal-700 text-white" : "bg-slate-100 text-slate-400 cursor-default")}
           >
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configuração de Confirmação"}
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isDirty ? "Salvar Configuração de Confirmação" : "Configuração Salva ✓"}
           </Button>
         </CardContent>
       </Card>
@@ -309,11 +315,15 @@ function ConfirmationsView() {
 function FollowupsView() {
   const { aiConfig, updateAI, loading } = useSettings();
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [localConfig, setLocalConfig] = useState<any>(null);
+
+  const setConfig = (updates: any) => { setLocalConfig((p: any) => ({ ...p, ...updates })); setIsDirty(true); };
 
   useEffect(() => {
     if (aiConfig) {
       setLocalConfig({ ...aiConfig });
+      setIsDirty(false);
     } else if (!loading) {
       setLocalConfig({
         followup_enabled: false,
@@ -335,6 +345,7 @@ function FollowupsView() {
     setSaving(true);
     await updateAI(localConfig);
     setSaving(false);
+    setIsDirty(false);
   };
 
   return (
@@ -356,8 +367,8 @@ function FollowupsView() {
               <p className="text-sm font-bold text-slate-900">Ativar Follow-up</p>
               <p className="text-[10px] font-semibold text-slate-500 uppercase pt-0.5">Disparo automático após inatividade</p>
             </div>
-            <button 
-              onClick={() => setLocalConfig({ ...localConfig, followup_enabled: !localConfig.followup_enabled })}
+            <button
+              onClick={() => { const v = !localConfig.followup_enabled; setLocalConfig({ ...localConfig, followup_enabled: v }); updateAI({ ...localConfig, followup_enabled: v }); }}
               className={cn(
                 "w-12 h-6 rounded-full relative transition-all",
                 localConfig.followup_enabled ? "bg-teal-600" : "bg-slate-300"
@@ -379,7 +390,7 @@ function FollowupsView() {
               <input
                 type="number"
                 value={localConfig.followup_delay || ""}
-                onChange={(e) => setLocalConfig({ ...localConfig, followup_delay: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setConfig({ followup_delay: parseInt(e.target.value) || 0 })}
                 className="w-32 px-4 py-2 border border-slate-200 rounded-lg font-bold text-teal-700 focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
                 placeholder="Ex: 1440"
               />
@@ -403,7 +414,7 @@ function FollowupsView() {
                 min={1}
                 max={10}
                 value={localConfig.followup_max_attempts ?? 3}
-                onChange={(e) => setLocalConfig({ ...localConfig, followup_max_attempts: parseInt(e.target.value) || 1 })}
+                onChange={(e) => setConfig({ followup_max_attempts: parseInt(e.target.value) || 1 })}
                 className="w-32 px-4 py-2 border border-slate-200 rounded-lg font-bold text-teal-700 focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
                 placeholder="Ex: 3"
               />
@@ -420,18 +431,18 @@ function FollowupsView() {
             <textarea
               rows={5}
               value={localConfig.followup_message || ""}
-              onChange={(e) => setLocalConfig({ ...localConfig, followup_message: e.target.value })}
+              onChange={(e) => setConfig({ followup_message: e.target.value })}
               className="w-full p-4 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all resize-none text-sm leading-relaxed"
               placeholder="Olá {paciente}, notamos que..."
             />
           </div>
 
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 shadow-lg shadow-teal-100"
+          <Button
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+            className={cn("w-full py-6 transition-all", isDirty ? "bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-100" : "bg-slate-100 text-slate-400 cursor-default")}
           >
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configuração de Follow-up"}
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isDirty ? "Salvar Configuração de Follow-up" : "Configuração Salva ✓"}
           </Button>
         </CardContent>
       </Card>
@@ -703,12 +714,14 @@ function HandoffView() {
   const { aiConfig, updateAI, loading } = useSettings();
   const { data: funnelStages } = useFunnelStages();
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [rules, setRules] = useState<HandoffRule[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     if (aiConfig) {
       setRules((aiConfig as any).handoff_rules || []);
+      setIsDirty(false);
     } else if (!loading) {
       setRules([]);
     }
@@ -726,10 +739,12 @@ function HandoffView() {
     setSaving(true);
     await updateAI({ ...(aiConfig || {}), handoff_rules: rules } as any);
     setSaving(false);
+    setIsDirty(false);
   };
 
   const addRule = () => {
     const id = crypto.randomUUID();
+    setIsDirty(true);
     const newRule: HandoffRule = {
       id,
       name: '',
@@ -748,10 +763,13 @@ function HandoffView() {
   const removeRule = (id: string) => {
     setRules(prev => prev.filter(r => r.id !== id));
     if (openId === id) setOpenId(null);
+    setIsDirty(true);
   };
 
-  const updateRule = (id: string, updates: Partial<HandoffRule>) =>
+  const updateRule = (id: string, updates: Partial<HandoffRule>) => {
     setRules(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+    setIsDirty(true);
+  };
 
   return (
     <div className="space-y-5 font-sans">
@@ -807,8 +825,12 @@ function HandoffView() {
               onRemove={() => removeRule(rule.id)}
             />
           ))}
-          <Button onClick={handleSave} disabled={saving} className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 shadow-lg shadow-teal-100">
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Gatilhos"}
+          <Button
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+            className={cn("w-full py-6 transition-all", isDirty ? "bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-100" : "bg-slate-100 text-slate-400 cursor-default")}
+          >
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isDirty ? "Salvar Gatilhos" : "Gatilhos Salvos ✓"}
           </Button>
         </>
       )}
@@ -1162,11 +1184,18 @@ function ChatsView() {
 function ConfigView() {
   const { aiConfig, updateAI, loading } = useSettings();
   const [saving, setSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [localConfig, setLocalConfig] = useState<any>(null);
+
+  const setConfig = (updates: any) => {
+    setLocalConfig((p: any) => ({ ...p, ...updates }));
+    setIsDirty(true);
+  };
 
   useEffect(() => {
     if (aiConfig) {
       setLocalConfig({ ...aiConfig });
+      setIsDirty(false);
     }
   }, [aiConfig]);
 
@@ -1182,6 +1211,7 @@ function ConfigView() {
     setSaving(true);
     await updateAI(localConfig);
     setSaving(false);
+    setIsDirty(false);
   };
 
   return (
@@ -1204,7 +1234,7 @@ function ConfigView() {
             <input
               type="text"
               value={localConfig.name || ""}
-              onChange={(e) => setLocalConfig({ ...localConfig, name: e.target.value })}
+              onChange={(e) => setConfig({ name: e.target.value })}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
             />
           </div>
@@ -1220,7 +1250,7 @@ function ConfigView() {
               ].map(tone => (
                 <button
                   key={tone.id}
-                  onClick={() => setLocalConfig({ ...localConfig, response_style: tone.id })}
+                  onClick={() => setConfig({ response_style: tone.id })}
                   className={cn(
                     "px-4 py-2 rounded-lg border font-semibold text-xs transition-all",
                     localConfig.response_style === tone.id 
@@ -1240,17 +1270,17 @@ function ConfigView() {
             <textarea
               rows={4}
               value={localConfig.prompt || ""}
-              onChange={(e) => setLocalConfig({ ...localConfig, prompt: e.target.value })}
+              onChange={(e) => setConfig({ prompt: e.target.value })}
               className="w-full p-4 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all resize-none text-sm leading-relaxed"
               placeholder="Descreva como a IA deve se comportar..."
             />
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6"
+          <Button
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+            className={cn("w-full py-6 transition-all", isDirty ? "bg-teal-600 hover:bg-teal-700 text-white" : "bg-slate-100 text-slate-400 cursor-default")}
           >
-            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar Configurações"}
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isDirty ? "Salvar Configurações" : "Configurações Salvas ✓"}
           </Button>
         </CardContent>
       </Card>
@@ -1271,7 +1301,7 @@ function ConfigView() {
                   type="number"
                   min={1}
                   value={localConfig.sla_minutes ?? 120}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, sla_minutes: Number(e.target.value) })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ sla_minutes: Number(e.target.value) })}
                   className="w-24 px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
                 />
                 <span className="text-sm text-slate-500 font-medium">minutos</span>
@@ -1283,7 +1313,7 @@ function ConfigView() {
                 <input
                   type="time"
                   value={localConfig.business_hours?.start ?? '08:00'}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { end: '18:00', days: [1,2,3,4,5] }), start: e.target.value } })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ business_hours: { ...(localConfig.business_hours ?? { end: '18:00', days: [1,2,3,4,5] }), start: e.target.value } })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
                 />
               </div>
@@ -1292,7 +1322,7 @@ function ConfigView() {
                 <input
                   type="time"
                   value={localConfig.business_hours?.end ?? '18:00'}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { start: '08:00', days: [1,2,3,4,5] }), end: e.target.value } })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ business_hours: { ...(localConfig.business_hours ?? { start: '08:00', days: [1,2,3,4,5] }), end: e.target.value } })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
                 />
               </div>
@@ -1308,7 +1338,7 @@ function ConfigView() {
                       key={i}
                       onClick={() => {
                         const newDays = active ? days.filter(x => x !== i) : [...days, i].sort();
-                        setLocalConfig({ ...localConfig, business_hours: { ...(localConfig.business_hours ?? { start: '08:00', end: '18:00' }), days: newDays } });
+                        setConfig({ business_hours: { ...(localConfig.business_hours ?? { start: '08:00', end: '18:00' }), days: newDays } });
                       }}
                       className={cn(
                         "px-2.5 py-1 rounded text-xs font-bold border transition-all",
@@ -1318,6 +1348,33 @@ function ConfigView() {
                   );
                 })}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-slate-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-teal-600" />
+              Ticket Médio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Valor padrão por lead</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-500">R$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={localConfig.default_ticket_value ?? 0}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfig({ default_ticket_value: Number(e.target.value) })}
+                  className="w-36 px-3 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none text-sm"
+                  placeholder="0,00"
+                />
+              </div>
+              <p className="text-xs text-slate-400 pl-1">Pré-preenchido automaticamente em novos leads.</p>
             </div>
           </CardContent>
         </Card>
