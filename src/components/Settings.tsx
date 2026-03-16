@@ -28,6 +28,7 @@ import {
     Smartphone,
     Loader2,
     X,
+    Plus,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -276,6 +277,7 @@ function BrandingSettings({ data, onChange }: { data: Partial<Clinic>, onChange:
                     </div>
                 </CardContent>
             </Card>
+
         </div>
     );
 }
@@ -468,14 +470,45 @@ function ClinicSettings({ data, onChange }: { data: Partial<Clinic>, onChange: (
     );
 }
 
-function IntegrationSettings({ data, onChange, onConnect, onCancel, connecting }: { 
-    data: Partial<WhatsappInstance>, 
+function IntegrationSettings({ data, onChange, onConnect, onCancel, connecting }: {
+    data: Partial<WhatsappInstance>,
     onChange: (updates: Partial<WhatsappInstance>) => void,
     onConnect: () => void,
     onCancel: () => void,
     connecting: boolean
 }) {
     const [simulating, setSimulating] = useState(false);
+    const { clinic } = useSettings();
+    const [groupName, setGroupName] = useState('Informativos do Agente IA');
+    const [participants, setParticipants] = useState<{ name: string; phone: string }[]>([{ name: '', phone: '' }]);
+    const [creatingGroup, setCreatingGroup] = useState(false);
+    const [groupResult, setGroupResult] = useState<'success' | 'error' | null>(null);
+
+    const addParticipant = () => setParticipants(p => [...p, { name: '', phone: '' }]);
+    const removeParticipant = (i: number) => setParticipants(p => p.filter((_, idx) => idx !== i));
+    const updateParticipant = (i: number, field: 'name' | 'phone', value: string) =>
+        setParticipants(p => p.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
+
+    const handleCreateGroup = async () => {
+        if (!clinic?.id) return;
+        setCreatingGroup(true);
+        setGroupResult(null);
+        try {
+            const { error } = await supabase.functions.invoke('whatsapp-bridge', {
+                body: {
+                    action: 'create_group',
+                    clinic_id: clinic.id,
+                    group_name: groupName,
+                    participants: participants.filter(p => p.phone.trim()),
+                },
+            });
+            setGroupResult(error ? 'error' : 'success');
+        } catch {
+            setGroupResult('error');
+        } finally {
+            setCreatingGroup(false);
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -651,6 +684,80 @@ function IntegrationSettings({ data, onChange, onConnect, onCancel, connecting }
                                 </div>
                             </div>
                         )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Grupo de Notificação */}
+            <Card className="border border-slate-200 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 pb-6 px-8">
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-lg">
+                            <Bell className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-2xl font-bold text-white">Grupo de Notificações</CardTitle>
+                            <p className="text-white/80 font-medium text-sm">Crie um grupo no WhatsApp para receber alertas do Agente IA</p>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-8 space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome do Grupo</label>
+                        <input
+                            type="text"
+                            value={groupName}
+                            onChange={e => setGroupName(e.target.value)}
+                            placeholder="Informativos do Agente IA"
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 text-sm placeholder:text-slate-300 focus:ring-2 focus:ring-violet-100 focus:border-violet-300 outline-none transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Participantes</label>
+                            <Button variant="outline" size="sm" onClick={addParticipant} className="text-violet-600 border-violet-200 hover:bg-violet-50 gap-1 h-8 text-xs font-bold">
+                                <Plus className="w-3.5 h-3.5" /> Adicionar
+                            </Button>
+                        </div>
+                        <div className="space-y-2">
+                            {participants.map((p, i) => (
+                                <div key={i} className="flex gap-2 items-center">
+                                    <input
+                                        type="text"
+                                        value={p.name}
+                                        onChange={e => updateParticipant(i, 'name', e.target.value)}
+                                        placeholder="Nome"
+                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 placeholder:text-slate-300 focus:ring-2 focus:ring-violet-100 focus:border-violet-300 outline-none"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={p.phone}
+                                        onChange={e => updateParticipant(i, 'phone', e.target.value)}
+                                        placeholder="Telefone (5511999999999)"
+                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 placeholder:text-slate-300 focus:ring-2 focus:ring-violet-100 focus:border-violet-300 outline-none"
+                                    />
+                                    {participants.length > 1 && (
+                                        <button onClick={() => removeParticipant(i)} className="text-slate-400 hover:text-rose-500 transition-colors p-1">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <Button
+                            onClick={handleCreateGroup}
+                            disabled={creatingGroup || !groupName.trim()}
+                            className="bg-violet-600 hover:bg-violet-700 text-white gap-2 h-11 px-8 font-bold shadow-lg shadow-violet-100 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                            {creatingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                            {creatingGroup ? 'Criando...' : 'Criar Grupo'}
+                        </Button>
+                        {groupResult === 'success' && <span className="text-sm font-bold text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Grupo criado com sucesso!</span>}
+                        {groupResult === 'error' && <span className="text-sm font-bold text-rose-600 flex items-center gap-1"><X className="w-4 h-4" /> Erro ao criar grupo. Verifique a conexão.</span>}
                     </div>
                 </CardContent>
             </Card>
