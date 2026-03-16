@@ -690,6 +690,7 @@ export interface Clinic {
   logo_url: string | null;
   primary_color: string | null;
   plan: 'free' | 'pro' | 'enterprise';
+  notification_group_id: string | null;
 }
 
 export interface AIConfig {
