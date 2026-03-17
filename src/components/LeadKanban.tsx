@@ -218,14 +218,17 @@ export function LeadKanban() {
                   const isPerdido = stage.name === 'Perdido';
                   const semMotivo = isPerdido && !lead.loss_reason;
                   const lastContact = lead.last_message_at ?? lead.created_at;
-                  const slaBreach = (() => {
-                    if (!aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at) return 0;
-                    // Congela o SLA quando lead virou paciente ou foi para Perdido
-                    const frozen = lead.converted_patient_id || isPerdido;
+                  const frozen = !!lead.converted_patient_id || isPerdido;
+                  // Contagem persistente do banco + ciclo atual estourado
+                  const currentCycleBreach = (() => {
+                    if (frozen || !aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at) return false;
+                    // Só conta se o lead mandou msg depois da última resposta (ciclo aberto)
+                    if (lead.last_outbound_at && parseISO(lead.last_outbound_at) > parseISO(lead.last_message_at)) return false;
                     const endDate = frozen && lead.updated_at ? parseISO(lead.updated_at) : undefined;
                     const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours, endDate);
-                    return Math.floor(mins / aiConfig.sla_minutes);
+                    return mins > aiConfig.sla_minutes;
                   })();
+                  const slaBreach = lead.sla_breach_count + (currentCycleBreach ? 1 : 0);
                   const aguardando = !isPerdido && !!lead.last_outbound_at && (
                     !lead.last_message_at || parseISO(lead.last_outbound_at) > parseISO(lead.last_message_at)
                   );
@@ -270,19 +273,17 @@ export function LeadKanban() {
                     )}
 
                     {/* Badges de status */}
-                    {(aguardando || !!lead.last_message_at) && (
+                    {(aguardando || slaBreach > 0) && (
                       <div className="flex items-center gap-1.5 mt-2">
                         {aguardando && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-blue-50 border-blue-200 text-blue-600">
                             Aguardando
                           </span>
                         )}
-                        {!!lead.last_message_at && (
+                        {slaBreach > 0 && (
                           <span className={cn(
                             "text-[9px] font-bold px-1.5 py-0.5 rounded border",
-                            slaBreach === 0
-                              ? "bg-slate-50 border-slate-200 text-slate-400"
-                              : slaBreach === 1
+                            slaBreach === 1
                               ? "bg-amber-50 border-amber-200 text-amber-700"
                               : "bg-rose-50 border-rose-100 text-rose-700"
                           )}>

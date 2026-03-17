@@ -290,6 +290,8 @@ export interface Lead {
   estimated_value: number | null;
   notes: string | null;
   ai_enabled: boolean;
+  converted_patient_id: string | null;
+  sla_breach_count: number;
   last_message_at: string | null;
   last_outbound_at: string | null;
   created_at: string;
