@@ -18,8 +18,8 @@ import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFunnelStages, useLeads, useSettings } from "../hooks/useSupabase";
 
-function calcBusinessMinutes(since: Date, bh: { start: string; end: string; days: number[] }): number {
-  const now = new Date();
+function calcBusinessMinutes(since: Date, bh: { start: string; end: string; days: number[] }, endDate?: Date): number {
+  const now = endDate || new Date();
   if (since >= now) return 0;
   const [sh, sm] = bh.start.split(':').map(Number);
   const [eh, em] = bh.end.split(':').map(Number);
@@ -220,7 +220,10 @@ export function LeadKanban() {
                   const lastContact = lead.last_message_at ?? lead.created_at;
                   const slaBreach = (() => {
                     if (!aiConfig?.sla_minutes || !aiConfig?.business_hours || !lead.last_message_at) return 0;
-                    const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours);
+                    // Congela o SLA quando lead virou paciente ou foi para Perdido
+                    const frozen = lead.converted_patient_id || isPerdido;
+                    const endDate = frozen && lead.updated_at ? parseISO(lead.updated_at) : undefined;
+                    const mins = calcBusinessMinutes(parseISO(lead.last_message_at), aiConfig.business_hours, endDate);
                     return Math.floor(mins / aiConfig.sla_minutes);
                   })();
                   const aguardando = !isPerdido && !!lead.last_outbound_at && (
