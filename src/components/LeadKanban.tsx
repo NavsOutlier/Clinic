@@ -277,7 +277,7 @@ export function LeadKanban() {
                       <div className="flex items-center gap-1.5 mt-2">
                         {aguardando && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-blue-50 border-blue-200 text-blue-600">
-                            Aguardando
+                            Aguardando Lead
                           </span>
                         )}
                         {slaBreach > 0 && (
