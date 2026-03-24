@@ -727,7 +727,7 @@ export interface WhatsappInstance {
   phone_number: string | null;
   status: 'connected' | 'disconnected' | 'qr_pending' | 'connecting';
   connected_at: string | null;
-  qr_code?: string;
+  qr_code?: string | null;
 }
 
 export function useSettings() {
@@ -762,17 +762,29 @@ export function useSettings() {
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'whatsapp_instances',
-        filter: `clinic_id=eq.${profile.clinic_id}`
-      }, () => {
-        fetch(true);
+        table: 'whatsapp_instances'
+      }, (payload) => {
+        console.log('Realtime event received:', payload);
+        if (payload.new && (payload.new as any).clinic_id === profile.clinic_id) {
+          fetch(true);
+        }
       })
       .subscribe();
 
+    // Polling fallback: busca dados a cada 5 segundos se estiver aguardando conexão
+    let pollInterval: any;
+    if (whatsapp?.status === 'connecting' || whatsapp?.status === 'qr_pending') {
+      pollInterval = setInterval(() => {
+        console.log('Polling for WhatsApp update...');
+        fetch(true);
+      }, 5000);
+    }
+
     return () => {
       supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
     };
-  }, [fetch, profile?.clinic_id]);
+  }, [fetch, profile?.clinic_id, whatsapp?.status]); // Adicionado whatsapp.status para re-avaliar o polling
 
   const updateClinic = async (updates: Partial<Clinic>) => {
     if (!profile?.clinic_id) return false;

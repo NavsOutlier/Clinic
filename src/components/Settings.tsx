@@ -47,9 +47,13 @@ export function Settings() {
     const [connecting, setConnecting] = useState(false);
 
     useEffect(() => {
+        console.log('Settings: Auth values changed - WhatsApp:', !!whatsapp, 'Has QR:', !!whatsapp?.qr_code, 'Status:', whatsapp?.status);
         if (clinic && Object.keys(localClinic).length === 0) setLocalClinic(clinic);
         if (aiConfig && Object.keys(localAI).length === 0) setLocalAI(aiConfig);
-        if (whatsapp) setLocalWA(whatsapp); // WhatsApp sincroniza sempre pois o QR muda em background
+        if (whatsapp) {
+            console.log('Settings: Synchronizing localWA with WhatsApp from server');
+            setLocalWA(whatsapp);
+        }
     }, [clinic, aiConfig, whatsapp]);
 
     const handleSave = async () => {
@@ -114,7 +118,7 @@ export function Settings() {
     const handleWhatsappCancel = async () => {
         if (!clinic?.id) return;
         try {
-            await updateWhatsapp({ status: 'disconnected', qr_code: undefined });
+            await updateWhatsapp({ status: 'disconnected', qr_code: null });
             console.log('Conexão cancelada pelo usuário.');
         } catch (error) {
             console.error('Erro ao cancelar conexão:', error);
