@@ -1270,56 +1270,20 @@ function ConfigView() {
             Configurações da Assistente
           </CardTitle>
           <CardDescription className="text-slate-500 font-medium">
-            Personalize o comportamento e tom de voz da assistência automática.
+            Personalize as informações da clínica para orientar a assistência automática.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
-              Nome de Exibição
-            </label>
-            <input
-              type="text"
-              value={localConfig.name || ""}
-              onChange={(e) => setConfig({ name: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
-              Tom de Voz
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'cordial', label: 'Cordial' },
-                { id: 'objetiva', label: 'Objetiva' },
-                { id: 'tecnica', label: 'Técnica' }
-              ].map(tone => (
-                <button
-                  key={tone.id}
-                  onClick={() => setConfig({ response_style: tone.id })}
-                  className={cn(
-                    "px-4 py-2 rounded-lg border font-semibold text-xs transition-all",
-                    localConfig.response_style === tone.id 
-                      ? "bg-teal-50 border-teal-600 text-teal-700" 
-                      : "bg-white border-slate-200 text-slate-500 hover:border-teal-200"
-                  )}
-                >
-                  {tone.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
-              Instruções de Comportamento
+              Informações da Clínica
             </label>
             <textarea
-              rows={4}
+              rows={8}
               value={localConfig.prompt || ""}
               onChange={(e) => setConfig({ prompt: e.target.value })}
               className="w-full p-4 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-teal-100 focus:border-teal-600 outline-none transition-all resize-none text-sm leading-relaxed"
-              placeholder="Descreva como a IA deve se comportar..."
+              placeholder="Descreva aqui informações da clínica, especialidades, médicos, horários, localização e instruções para que a IA possa responder aos pacientes de forma correta..."
             />
           </div>
           <Button
