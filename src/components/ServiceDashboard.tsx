@@ -17,7 +17,7 @@ import {
   Calendar,
   ChevronDown,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -66,16 +66,23 @@ export function ServiceDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>('30d');
+  const [chartMetric, setChartMetric] = useState<ChartMetric>('messages');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchData = useCallback(async () => {
-    // ... logic remains same ...
-// [OMITTED FOR BREVITY - I will use multi_replace if needed but for now I'll stick to replacing the UI block and adding the state]
-// Actually, I should probably use multi_replace to add the state separately.
-// But wait, I can just add the state at the top of the component.
-
-// Let's use multi_replace.
-
     if (!profile?.clinic_id) return;
     const clinicId = profile.clinic_id;
 
@@ -280,19 +287,52 @@ export function ServiceDashboard() {
               <BarChart3 className="w-4 h-4 text-teal-600" />
               Tendências
             </CardTitle>
-            <div className="relative mt-2 sm:mt-0">
-              <select
-                value={chartMetric}
-                onChange={(e) => setChartMetric(e.target.value as ChartMetric)}
-                className="appearance-none bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-[11px] font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-teal-100 transition-all cursor-pointer shadow-sm hover:border-slate-300 min-w-[140px]"
+            <div className="relative mt-2 sm:mt-0" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center justify-between gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-700 hover:border-teal-300 hover:bg-teal-50/30 transition-all shadow-sm min-w-[150px]"
               >
-                {chartMetrics.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <div className="flex items-center gap-2">
+                  {React.createElement(chartMetrics.find(m => m.value === chartMetric)?.icon || BarChart3, { className: "w-3.5 h-3.5 text-teal-600" })}
+                  <span>{chartMetrics.find(m => m.value === chartMetric)?.label}</span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden"
+                  >
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {chartMetrics.map((m) => (
+                        <button
+                          key={m.value}
+                          onClick={() => {
+                            setChartMetric(m.value);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-[11px] font-bold transition-colors ${
+                            chartMetric === m.value 
+                              ? 'bg-teal-50 text-teal-700' 
+                              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                          }`}
+                        >
+                          <div className={`p-1.5 rounded-lg ${chartMetric === m.value ? 'bg-teal-100' : 'bg-slate-100'}`}>
+                            {React.createElement(m.icon, { className: `w-3.5 h-3.5 ${chartMetric === m.value ? 'text-teal-600' : 'text-slate-500'}` })}
+                          </div>
+                          <span className="flex-1 text-left">{m.label}</span>
+                          {chartMetric === m.value && <div className="w-1.5 h-1.5 rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.6)]" />}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </CardHeader>
           <CardContent className="p-6 flex-1 flex flex-col justify-end">
