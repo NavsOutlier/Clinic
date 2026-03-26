@@ -1080,6 +1080,7 @@ export interface MarketingData {
   investment: number;
   conversions_value: number;
   manual_leads_count: number | null;
+  manual_appointments_count: number | null;
   manual_conversions_count: number | null;
   created_at: string;
 }

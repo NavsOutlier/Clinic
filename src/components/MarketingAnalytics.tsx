@@ -255,6 +255,7 @@ export function MarketingAnalytics() {
             stats[pKey][platform].investment += m.investment;
             stats[pKey][platform].conv_value += m.conversions_value;
             if (m.manual_leads_count !== null) stats[pKey][platform].leads += m.manual_leads_count;
+            if (m.manual_appointments_count !== null) stats[pKey][platform].appointments += (m as any).manual_appointments_count;
             if (m.manual_conversions_count !== null) stats[pKey][platform].convs += m.manual_conversions_count;
           }
         }
@@ -284,7 +285,10 @@ export function MarketingAnalytics() {
         const aptDate = parseISO(apt.date);
         if (aptDate >= p.start && aptDate <= p.end) {
           const platform = patientSourceMap[apt.patient_id] || 'no_track';
-          if (stats[pKey][platform]) {
+          const dateStr = format(aptDate, 'yyyy-MM-dd');
+          const manualApts = marketingData.find(d => d.date === dateStr && d.platform === platform)?.manual_appointments_count;
+          
+          if (stats[pKey][platform] && (manualApts === null || manualApts === undefined)) {
             stats[pKey][platform].appointments += 1;
           }
         }
@@ -323,11 +327,14 @@ export function MarketingAnalytics() {
       const dateStr = format(day, 'yyyy-MM-dd');
       ['meta_ads', 'google_ads', 'no_track'].forEach(p => {
         const key = `${dateStr}-${p}`;
-        const existing = marketingData.find(d => d.date === dateStr && d.platform === p);
-        initial[`${key}-investment`] = existing?.investment || 0;
-        initial[`${key}-leads`] = existing?.manual_leads_count ?? "";
-        initial[`${key}-convs`] = existing?.manual_conversions_count ?? "";
-        initial[`${key}-value`] = existing?.conversions_value || 0;
+        // Para pre-encher o editor, calculamos os stats ATUAIS desse dia específico
+        const dayStats = calculateStats([{ start: day, end: day, label: dateStr }])[dateStr][p];
+        
+        initial[`${key}-investment`] = dayStats.investment || 0;
+        initial[`${key}-leads`] = dayStats.leads || 0;
+        initial[`${key}-appointments`] = dayStats.appointments || 0;
+        initial[`${key}-convs`] = dayStats.convs || 0;
+        initial[`${key}-value`] = dayStats.conv_value || 0;
       });
     });
     setEditValues(initial);
@@ -344,8 +351,9 @@ export function MarketingAnalytics() {
           date: dateStr,
           platform: p,
           investment: Number(editValues[`${key}-investment`] || 0),
-          manual_leads_count: editValues[`${key}-leads`] === "" ? null : Number(editValues[`${key}-leads`]),
-          manual_conversions_count: editValues[`${key}-convs`] === "" ? null : Number(editValues[`${key}-convs`]),
+          manual_leads_count: Number(editValues[`${key}-leads`] || 0),
+          manual_appointments_count: Number(editValues[`${key}-appointments`] || 0),
+          manual_conversions_count: Number(editValues[`${key}-convs`] || 0),
           conversions_value: Number(editValues[`${key}-value`] || 0)
         });
       });
@@ -920,8 +928,9 @@ function MetricRow({ label, periods, metrics, compareMetrics, isComparing, platf
         const editKey = `${dateStr}-${platform}-${valueKey}`;
         
         const currentInv = (period === 'dia' ? Number(editValues[`${dateStr}-${platform}-investment`] || 0) : dayMetrics?.investment) || 0;
-        const currentLeads = (period === 'dia' ? (editValues[`${dateStr}-${platform}-leads`] === "" ? 0 : Number(editValues[`${dateStr}-${platform}-leads`])) : dayMetrics?.leads) || 0;
-        const currentConvs = (period === 'dia' ? (editValues[`${dateStr}-${platform}-convs`] === "" ? 0 : Number(editValues[`${dateStr}-${platform}-convs`])) : dayMetrics?.convs) || 0;
+        const currentLeads = (period === 'dia' ? Number(editValues[`${dateStr}-${platform}-leads`] || 0) : dayMetrics?.leads) || 0;
+        const currentApts = (period === 'dia' ? Number(editValues[`${dateStr}-${platform}-appointments`] || 0) : dayMetrics?.appointments) || 0;
+        const currentConvs = (period === 'dia' ? Number(editValues[`${dateStr}-${platform}-convs`] || 0) : dayMetrics?.convs) || 0;
         const currentValue = (period === 'dia' ? Number(editValues[`${dateStr}-${platform}-value`] || 0) : dayMetrics?.value) || 0;
 
         const prevInv = prevMetrics?.investment || 0;
@@ -934,8 +943,11 @@ function MetricRow({ label, periods, metrics, compareMetrics, isComparing, platf
         else if (type === 'currency' && valueKey === 'value') { val = currentValue; pVal = prevMetrics?.conv_value || 0; }
         else if (type === 'percent') { val = currentLeads > 0 ? (currentConvs/currentLeads)*100 : 0; pVal = prevLeads > 0 ? ((prevMetrics?.convs || 0)/prevLeads)*100 : 0; }
         else if (valueKey === 'cpl') { val = currentLeads > 0 ? currentInv/currentLeads : 0; pVal = prevLeads > 0 ? prevInv/prevLeads : 0; }
-        else if (valueKey === 'cpa') { val = dayMetrics?.appointments > 0 ? currentInv/dayMetrics.appointments : 0; pVal = prevMetrics?.appointments > 0 ? prevInv/prevMetrics.appointments : 0; }
+        else if (valueKey === 'cpa') { val = currentApts > 0 ? currentInv/currentApts : 0; pVal = prevMetrics?.appointments > 0 ? prevInv/prevMetrics.appointments : 0; }
         else if (valueKey === 'cpconv') { val = currentConvs > 0 ? currentInv/currentConvs : 0; pVal = (prevMetrics?.convs || 0) > 0 ? prevInv/prevMetrics.convs : 0; }
+        else if (valueKey === 'leads') { val = currentLeads; pVal = prevLeads; }
+        else if (valueKey === 'appointments') { val = currentApts; pVal = prevMetrics?.appointments || 0; }
+        else if (valueKey === 'convs') { val = currentConvs; pVal = prevMetrics?.convs || 0; }
         else { val = (dayMetrics as any)?.[valueKey] || 0; pVal = (prevMetrics as any)?.[valueKey] || 0; }
 
         const delta = pVal > 0 ? ((val - pVal) / pVal) * 100 : null;
