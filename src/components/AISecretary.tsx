@@ -1078,33 +1078,38 @@ function ChatsView() {
                         {lead.name}
                       </span>
                       <span className="text-[10px] font-medium text-slate-400">
-                        {format(new Date(lead.created_at), 'HH:mm')}
+                        {format(new Date(lead.created_at), 'dd/MM')}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 truncate mb-1">
                       {lead.phone || 'Sem telefone'}
                     </p>
-                    <div className="flex gap-1">
-                      {(() => {
-                        const isAguardando = !!lead.last_outbound_at && (
-                          !lead.last_message_at || parseISO(lead.last_outbound_at) > parseISO(lead.last_message_at)
-                        );
-                        const isPrecisaResponder = !!lead.last_message_at && (
-                          !lead.last_outbound_at || parseISO(lead.last_message_at) > parseISO(lead.last_outbound_at)
-                        );
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex gap-1">
+                        {(() => {
+                          const isAguardando = !!lead.last_outbound_at && (
+                            !lead.last_message_at || parseISO(lead.last_outbound_at) > parseISO(lead.last_message_at)
+                          );
+                          const isPrecisaResponder = !!lead.last_message_at && (
+                            !lead.last_outbound_at || parseISO(lead.last_message_at) > parseISO(lead.last_outbound_at)
+                          );
 
-                        if (isAguardando) return (
-                          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase">
-                            Aguardando Lead
-                          </span>
-                        );
-                        if (isPrecisaResponder) return (
-                          <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-100 uppercase">
-                            Responder Lead
-                          </span>
-                        );
-                        return null;
-                      })()}
+                          if (isAguardando) return (
+                            <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                              Aguardando Lead
+                            </span>
+                          );
+                          if (isPrecisaResponder) return (
+                            <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-100 uppercase">
+                              Responder Lead
+                            </span>
+                          );
+                          return null;
+                        })()}
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400">
+                        {format(new Date(lead.created_at), 'HH:mm')}
+                      </span>
                     </div>
                   </div>
                 </div>
