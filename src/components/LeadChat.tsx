@@ -193,26 +193,44 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
                   )}
                   <div
                     className={cn(
-                      "flex flex-col max-w-[85%] min-w-0",
-                      isOutbound ? "ml-auto items-end" : "mr-auto items-start"
+                      "flex gap-4 max-w-[85%] min-w-0",
+                      isOutbound ? "ml-auto flex-row-reverse" : ""
                     )}
                   >
-                  <div className={cn(
-                    "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-words",
-                    isOutbound 
-                      ? (isAI ? "bg-teal-600 text-white rounded-tr-none" : "bg-white text-slate-800 border border-slate-200 rounded-tr-none")
-                      : "bg-slate-200 text-slate-800 rounded-tl-none"
-                  )}>
-                    {extractMessageText(msg.message)}
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg shadow-sm flex-shrink-0 flex items-center justify-center",
+                      isAI ? "bg-teal-600 shadow-md" : 
+                      (isOutbound ? "bg-slate-800 shadow-md" : "bg-white border border-slate-200")
+                    )}>
+                      {isAI ? (
+                        <Bot className="w-5 h-5 text-white" />
+                      ) : (
+                        <User className={cn("w-4 h-4", isOutbound ? "text-white" : "text-slate-400")} />
+                      )}
+                    </div>
+                    
+                    <div className={cn(
+                      "px-4 py-3 rounded-2xl text-sm shadow-sm max-w-full overflow-hidden break-words",
+                      isAI 
+                        ? "bg-teal-600 text-white rounded-tr-none" 
+                        : (isOutbound 
+                            ? "bg-slate-800 text-white rounded-tr-none"
+                            : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")
+                    )}>
+                      <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
+                        {extractMessageText(msg.message)}
+                      </p>
+                      <div className="flex items-center justify-between gap-4 mt-1">
+                        <span className={cn(
+                          "text-[9px] block opacity-60 font-bold uppercase ml-auto",
+                          isOutbound || isAI ? "text-white text-right" : "text-slate-400"
+                        )}>
+                          {format(parseISO(msg.created_at), 'HH:mm')}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1.5 px-1">
-                    {isAI && <Bot className="w-3 h-3 text-teal-600" />}
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                      {isAI ? 'Comercial' : (isOutbound ? 'Você' : lead.name)} • {format(parseISO(msg.created_at), 'HH:mm')}
-                    </span>
-                  </div>
-                </div>
-              </React.Fragment>
+                </React.Fragment>
             );
           })}
           {/* Elemento âncora invisível no final exato do container */}
