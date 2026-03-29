@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Zap,
   Pencil,
+  Send,
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -602,178 +603,354 @@ export function LeadKanban() {
       {/* Automation Rules Modal */}
       <AnimatePresence>
         {showAutomationModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowAutomationModal(false)}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-teal-50 rounded-lg">
-                    <Zap className="w-5 h-5 text-teal-600" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowAutomationModal(false)}>
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-emerald-600" />
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA4KSIvPjwvc3ZnPg==')] opacity-60" />
+                <div className="relative px-6 py-5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Automações do Funil</h3>
+                      <p className="text-xs text-white/70 font-medium">Regras automáticas de transição de etapa</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">Automação de Etapas</h3>
-                    <p className="text-xs text-slate-500">Mude o lead de etapa automaticamente por palavras-chave.</p>
-                  </div>
+                  <button onClick={() => setShowAutomationModal(false)} className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                    <X className="w-4 h-4 text-white" />
+                  </button>
                 </div>
-                <button onClick={() => setShowAutomationModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
               </div>
 
-              <div className="p-6 max-h-[400px] overflow-y-auto space-y-4 custom-scrollbar">
-                <div className="space-y-3">
-                  {transitionRules.map((rule, idx) => (
-                    <div key={rule.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 relative group">
-                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => {
-                            setEditingRuleId(rule.id);
-                            setNewRule({
-                              keywords: rule.keywords || '',
-                              target_stage_id: rule.target_stage_id || '',
-                              context: rule.context || '',
-                              lead_response: rule.lead_response || '',
-                              message_to_send: rule.message_to_send || ''
-                            });
-                            setIsAddingRule(true);
-                          }}
-                          className="p-1 text-slate-400 hover:text-teal-600 transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => removeRule(rule.id)}
-                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {rule.context && (
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Contexto</p>
-                            <p className="text-xs text-slate-600 italic">"{rule.context}"</p>
-                          </div>
-                        )}
-                        {rule.lead_response && (
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Resposta do Lead</p>
-                            <p className="text-xs text-slate-600 italic">"{rule.lead_response}"</p>
-                          </div>
-                        )}
-                        {rule.message_to_send && (
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mensagem a ser enviada</p>
-                            <p className="text-xs text-slate-600 italic">"{rule.message_to_send}"</p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Gatilho a ser enviado</p>
-                          <p className="text-sm font-medium text-slate-700">{rule.keywords}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mover para</p>
-                          <div className="flex items-center gap-2">
-                            <div className={cn("w-2 h-2 rounded-full", stages.find(s => s.id === rule.target_stage_id)?.color || 'bg-slate-400')} />
-                            <p className="text-sm font-bold text-slate-900">
-                              {stages.find(s => s.id === rule.target_stage_id)?.name || 'Etapa não encontrada'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+              {/* Content */}
+              <div className="p-6 max-h-[460px] overflow-y-auto space-y-4 custom-scrollbar">
+                {transitionRules.length === 0 && !isAddingRule ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center">
+                      <Zap className="w-7 h-7 text-slate-300" />
                     </div>
-                  ))}
-
-                  {isAddingRule ? (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-teal-50/50 rounded-xl border border-teal-100 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contexto</label>
-                        <input 
-                          type="text" 
-                          value={newRule.context} 
-                          onChange={e => setNewRule(p => ({ ...p, context: e.target.value }))}
-                          placeholder="Ex: Lead deseja agendar uma avaliação"
-                          className="w-full px-3 py-2 text-sm bg-white border border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Resposta do Lead</label>
-                        <input 
-                          type="text" 
-                          value={newRule.lead_response} 
-                          onChange={e => setNewRule(p => ({ ...p, lead_response: e.target.value }))}
-                          placeholder="Ex: Sim, gostaria de marcar"
-                          className="w-full px-3 py-2 text-sm bg-white border border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mensagem a ser enviada</label>
-                        <textarea 
-                          rows={3}
-                          value={newRule.message_to_send} 
-                          onChange={e => setNewRule(p => ({ ...p, message_to_send: e.target.value }))}
-                          placeholder="Digite a mensagem que o sistema deve considerar..."
-                          className="w-full px-3 py-2 text-sm bg-white border border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium resize-none"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gatilho a ser enviado (separados por vírgula)</label>
-                        <input 
-                          type="text" 
-                          value={newRule.keywords} 
-                          onChange={e => setNewRule(p => ({ ...p, keywords: e.target.value }))}
-                          placeholder="Ex: [AGENDAR_CONSULTA]"
-                          className="w-full px-3 py-2 text-sm bg-white border border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Etapa Destino</label>
-                        <select 
-                          value={newRule.target_stage_id}
-                          onChange={e => setNewRule(p => ({ ...p, target_stage_id: e.target.value }))}
-                          className="w-full px-3 py-2 text-sm bg-white border border-teal-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium"
-                        >
-                          <option value="">Selecione uma etapa...</option>
-                          {stages.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-teal-600 hover:bg-teal-700"
-                          disabled={!newRule.keywords.trim() || !newRule.target_stage_id || submitting}
-                          onClick={async () => {
-                            setSubmitting(true);
-                            if (editingRuleId) {
-                              await updateRule(editingRuleId, newRule);
-                            } else {
-                              await createRule(newRule);
-                            }
-                            setNewRule({ keywords: '', target_stage_id: '', context: '', lead_response: '', message_to_send: '' });
-                            setSubmitting(false);
-                            setIsAddingRule(false);
-                            setEditingRuleId(null);
-                          }}
-                        >
-                          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                          {editingRuleId ? 'Salvar Edição' : 'Confirmar'}
-                        </Button>
-                        <Button size="sm" variant="ghost" className="flex-1" onClick={() => { setIsAddingRule(false); setEditingRuleId(null); }}>Cancelar</Button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <button 
+                    <p className="text-sm font-bold text-slate-500">Nenhuma automação configurada</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Crie regras para mover leads automaticamente entre etapas com base no contexto da conversa.</p>
+                    <Button 
                       onClick={() => setIsAddingRule(true)}
-                      className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-400 text-sm font-bold hover:bg-slate-50 hover:border-slate-400 transition-all flex items-center justify-center gap-2"
+                      className="mt-5 bg-teal-600 hover:bg-teal-700 text-white gap-2 shadow-lg shadow-teal-100"
                     >
                       <Plus className="w-4 h-4" />
-                      Nova Regra
-                    </button>
-                  )}
-                </div>
+                      Criar Primeira Regra
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {transitionRules.map((rule, idx) => (
+                      editingRuleId === rule.id ? (
+                        /* Inline Edit Form – replaces the card */
+                        <motion.div key={rule.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border-2 border-teal-200 bg-gradient-to-b from-teal-50/50 to-white overflow-hidden">
+                          <div className="px-4 py-3 bg-teal-50 border-b border-teal-100 flex items-center justify-between">
+                            <p className="text-xs font-bold text-teal-800 flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-md bg-teal-600 text-white text-[9px] font-black flex items-center justify-center">{idx + 1}</span>
+                              ✏️ Editando regra
+                            </p>
+                          </div>
+                          <div className="p-4 space-y-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <MessageSquare className="w-3 h-3 text-blue-500" />
+                                Contexto
+                              </label>
+                              <textarea 
+                                rows={2}
+                                value={newRule.context} 
+                                onChange={e => setNewRule(p => ({ ...p, context: e.target.value }))}
+                                placeholder="Ex: Para qualificar o Lead após explicar como funciona a consulta..."
+                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium resize-none transition-all"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <MessageSquare className="w-3 h-3 text-amber-500" />
+                                Resposta Esperada do Lead
+                              </label>
+                              <input 
+                                type="text" 
+                                value={newRule.lead_response} 
+                                onChange={e => setNewRule(p => ({ ...p, lead_response: e.target.value }))}
+                                placeholder="Ex: Se a resposta for sim ou positiva"
+                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium transition-all"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <Send className="w-3 h-3 text-emerald-500" />
+                                Mensagem a Enviar
+                              </label>
+                              <textarea 
+                                rows={2}
+                                value={newRule.message_to_send} 
+                                onChange={e => setNewRule(p => ({ ...p, message_to_send: e.target.value }))}
+                                placeholder="Ex: Parabéns pela decisão! Para continuarmos..."
+                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium resize-none transition-all"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                  <Zap className="w-3 h-3 text-violet-500" />
+                                  Gatilho
+                                </label>
+                                <input 
+                                  type="text" 
+                                  value={newRule.keywords} 
+                                  onChange={e => setNewRule(p => ({ ...p, keywords: e.target.value }))}
+                                  placeholder="[QUALIFICADO]"
+                                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-mono font-medium transition-all"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Etapa Destino</label>
+                                <select 
+                                  value={newRule.target_stage_id}
+                                  onChange={e => setNewRule(p => ({ ...p, target_stage_id: e.target.value }))}
+                                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium transition-all"
+                                >
+                                  <option value="">Selecione...</option>
+                                  {stages.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <Button 
+                                size="sm" 
+                                className="flex-1 bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-100"
+                                disabled={!newRule.keywords.trim() || !newRule.target_stage_id || submitting}
+                                onClick={async () => {
+                                  setSubmitting(true);
+                                  await updateRule(editingRuleId, newRule);
+                                  setNewRule({ keywords: '', target_stage_id: '', context: '', lead_response: '', message_to_send: '' });
+                                  setSubmitting(false);
+                                  setEditingRuleId(null);
+                                }}
+                              >
+                                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                                Salvar Edição
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-slate-500" onClick={() => { setEditingRuleId(null); setNewRule({ keywords: '', target_stage_id: '', context: '', lead_response: '', message_to_send: '' }); }}>Cancelar</Button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        /* Read-only Rule Card */
+                        <motion.div 
+                          key={rule.id} 
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-xl border border-slate-200 overflow-hidden bg-white hover:shadow-md transition-shadow group"
+                        >
+                          {/* Rule Header */}
+                          <div className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+                            <div className="flex items-center gap-2.5">
+                              <span className="w-6 h-6 rounded-lg bg-teal-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-slate-700">Mover para</span>
+                                <div className={cn("w-2 h-2 rounded-full", stages.find(s => s.id === rule.target_stage_id)?.color || 'bg-slate-400')} />
+                                <span className="text-xs font-black text-teal-700">
+                                  {stages.find(s => s.id === rule.target_stage_id)?.name || '—'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => {
+                                  setEditingRuleId(rule.id);
+                                  setNewRule({
+                                    keywords: rule.keywords || '',
+                                    target_stage_id: rule.target_stage_id || '',
+                                    context: rule.context || '',
+                                    lead_response: rule.lead_response || '',
+                                    message_to_send: rule.message_to_send || ''
+                                  });
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-all"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => removeRule(rule.id)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Rule Body */}
+                          <div className="px-4 py-3 space-y-2.5">
+                            {rule.context && (
+                              <div className="flex gap-2.5">
+                                <div className="w-5 h-5 rounded-md bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <MessageSquare className="w-3 h-3 text-blue-500" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wider">Contexto</p>
+                                  <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{rule.context}</p>
+                                </div>
+                              </div>
+                            )}
+                            {rule.lead_response && (
+                              <div className="flex gap-2.5">
+                                <div className="w-5 h-5 rounded-md bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <MessageSquare className="w-3 h-3 text-amber-500" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">Resposta do Lead</p>
+                                  <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{rule.lead_response}</p>
+                                </div>
+                              </div>
+                            )}
+                            {rule.message_to_send && (
+                              <div className="flex gap-2.5">
+                                <div className="w-5 h-5 rounded-md bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <Send className="w-3 h-3 text-emerald-500" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider">Mensagem a Enviar</p>
+                                  <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{rule.message_to_send}</p>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex gap-2.5">
+                              <div className="w-5 h-5 rounded-md bg-violet-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Zap className="w-3 h-3 text-violet-500" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-bold text-violet-500 uppercase tracking-wider">Gatilho</p>
+                                <code className="text-xs font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mt-0.5 inline-block">{rule.keywords}</code>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
+                    ))}
+
+                    {/* Add New Form (only for new rules, not edits) */}
+                    {isAddingRule && !editingRuleId ? (
+                      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border-2 border-teal-200 bg-gradient-to-b from-teal-50/50 to-white overflow-hidden">
+                        <div className="px-4 py-3 bg-teal-50 border-b border-teal-100">
+                          <p className="text-xs font-bold text-teal-800">✨ Nova regra de automação</p>
+                        </div>
+                        <div className="p-4 space-y-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <MessageSquare className="w-3 h-3 text-blue-500" />
+                              Contexto
+                            </label>
+                            <textarea 
+                              rows={2}
+                              value={newRule.context} 
+                              onChange={e => setNewRule(p => ({ ...p, context: e.target.value }))}
+                              placeholder="Ex: Para qualificar o Lead após explicar como funciona a consulta..."
+                              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium resize-none transition-all"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <MessageSquare className="w-3 h-3 text-amber-500" />
+                              Resposta Esperada do Lead
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newRule.lead_response} 
+                              onChange={e => setNewRule(p => ({ ...p, lead_response: e.target.value }))}
+                              placeholder="Ex: Se a resposta for sim ou positiva"
+                              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium transition-all"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <Send className="w-3 h-3 text-emerald-500" />
+                              Mensagem a Enviar
+                            </label>
+                            <textarea 
+                              rows={2}
+                              value={newRule.message_to_send} 
+                              onChange={e => setNewRule(p => ({ ...p, message_to_send: e.target.value }))}
+                              placeholder="Ex: Parabéns pela decisão! Para continuarmos..."
+                              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium resize-none transition-all"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <Zap className="w-3 h-3 text-violet-500" />
+                                Gatilho
+                              </label>
+                              <input 
+                                type="text" 
+                                value={newRule.keywords} 
+                                onChange={e => setNewRule(p => ({ ...p, keywords: e.target.value }))}
+                                placeholder="[QUALIFICADO]"
+                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-mono font-medium transition-all"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Etapa Destino</label>
+                              <select 
+                                value={newRule.target_stage_id}
+                                onChange={e => setNewRule(p => ({ ...p, target_stage_id: e.target.value }))}
+                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 font-medium transition-all"
+                              >
+                                <option value="">Selecione...</option>
+                                {stages.map(s => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 pt-1">
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-100"
+                              disabled={!newRule.keywords.trim() || !newRule.target_stage_id || submitting}
+                              onClick={async () => {
+                                setSubmitting(true);
+                                await createRule(newRule);
+                                setNewRule({ keywords: '', target_stage_id: '', context: '', lead_response: '', message_to_send: '' });
+                                setSubmitting(false);
+                                setIsAddingRule(false);
+                              }}
+                            >
+                              {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                              Criar Regra
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-slate-500" onClick={() => { setIsAddingRule(false); setNewRule({ keywords: '', target_stage_id: '', context: '', lead_response: '', message_to_send: '' }); }}>Cancelar</Button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : !editingRuleId && (
+                      <button 
+                        onClick={() => setIsAddingRule(true)}
+                        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-sm font-bold hover:bg-teal-50 hover:border-teal-200 hover:text-teal-600 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Nova Regra
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex gap-3 p-6 border-t border-slate-100 bg-slate-50">
-                <Button className="flex-1 bg-teal-600 hover:bg-teal-700" onClick={() => setShowAutomationModal(false)}>
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <p className="text-[10px] font-medium text-slate-400">
+                  {transitionRules.length} {transitionRules.length === 1 ? 'regra configurada' : 'regras configuradas'}
+                </p>
+                <Button variant="ghost" className="text-slate-500 hover:text-slate-700" onClick={() => setShowAutomationModal(false)}>
                   Fechar
                 </Button>
               </div>
