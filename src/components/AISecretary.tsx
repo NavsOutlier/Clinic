@@ -33,6 +33,7 @@ import { cn } from "@/src/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { LeadKanban } from "./LeadKanban";
 import { ServiceDashboard } from "./ServiceDashboard";
+import { extractMessageText } from "./LeadChat";
 import { useLeads, useChatMessages, useSettings, useFunnelStages, FunnelStage } from "../hooks/useSupabase";
 import { format, parseISO, isToday, isYesterday, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1224,10 +1225,7 @@ function ChatsView() {
                           : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")
                   )}>
                     <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap break-words">
-                          {typeof msg.message === 'object' 
-                            ? (msg.message.content || msg.message.output || msg.message.text || JSON.stringify(msg.message)) 
-                            : String(msg.message || '')
-                          }
+                          {extractMessageText(msg.message)}
                         </p>
                         <div className="flex items-center justify-between gap-4 mt-1">
                           <span className={cn(

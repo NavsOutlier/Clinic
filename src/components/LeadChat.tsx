@@ -25,20 +25,52 @@ function stripToolCallPrefix(text: string): string {
   return text;
 }
 
-function extractMessageText(message: any): string {
+export function extractMessageText(message: any): string {
   if (!message) return '';
-  if (typeof message === 'string') return stripToolCallPrefix(message);
-  // content pode ser string ou array (formato Anthropic)
-  if (typeof message.content === 'string') return stripToolCallPrefix(message.content);
-  if (Array.isArray(message.content)) {
-    return message.content
-      .map((block: any) => block?.text || block?.content || '')
-      .filter(Boolean)
-      .join('\n');
+
+  // 1) Se for string, tenta extrair o content de dentro de um JSON
+  if (typeof message === 'string') {
+    const trimmed = message.trim();
+    if (trimmed.startsWith('{')) {
+      // Tenta JSON.parse direto
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.content) return extractMessageText(parsed.content);
+        if (parsed.text) return stripToolCallPrefix(parsed.text);
+        if (parsed.output) return stripToolCallPrefix(parsed.output);
+      } catch {
+        // JSON.parse falhou (ex: quebra de linha literal dentro do valor)
+        // Fallback: regex para extrair o campo "content"
+        const match = trimmed.match(/"content"\s*:\s*"([\s\S]*?)"\s*[,}]/);
+        if (match) {
+          return stripToolCallPrefix(match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"'));
+        }
+      }
+    }
+    return stripToolCallPrefix(trimmed);
   }
+
+  // 2) Se for objeto com "content"
+  if (message.content != null) {
+    if (typeof message.content === 'string') {
+      // Se o content em si parece ser JSON, recursa para extrair o real
+      const c = message.content.trim();
+      if (c.startsWith('{')) return extractMessageText(c);
+      return stripToolCallPrefix(message.content);
+    }
+    if (Array.isArray(message.content)) {
+      return message.content
+        .map((block: any) => block?.text || block?.content || '')
+        .filter(Boolean)
+        .join('\n');
+    }
+  }
+
+  // 3) Campos alternativos
   if (typeof message.text === 'string') return stripToolCallPrefix(message.text);
   if (typeof message.output === 'string') return stripToolCallPrefix(message.output);
-  // último recurso: concatena todos os valores string do objeto
+
+  // 4) Último recurso: concatena valores string do objeto
   const values = Object.values(message).filter(v => typeof v === 'string') as string[];
   if (values.length > 0) return stripToolCallPrefix(values.join(' '));
   return JSON.stringify(message);
