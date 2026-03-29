@@ -135,7 +135,7 @@ export function Settings() {
 
     const tabs = [
         { id: "branding", label: "Branding", icon: Palette, color: "text-teal-600" },
-        { id: "ai", label: "Assistente IA", icon: Bot, color: "text-teal-600" },
+        { id: "ai", label: "Comercial", icon: Bot, color: "text-teal-600" },
         { id: "clinic", label: "Dados da Clínica", icon: Building2, color: "text-emerald-600" },
         { id: "integrations", label: "Integrações", icon: Plug, color: "text-violet-600" },
     ];
@@ -312,8 +312,8 @@ function AISettings({ data, onChange }: { data: Partial<AIConfig>, onChange: (up
                         <Bot className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                        <CardTitle className="text-2xl font-bold text-slate-900">Assistente IA</CardTitle>
-                        <p className="text-slate-500 font-medium">Configure o comportamento da assistente automática.</p>
+                        <CardTitle className="text-2xl font-bold text-slate-900">Configuracoes do Comercial</CardTitle>
+                        <p className="text-slate-500 font-medium">Configure o comportamento da automacao comercial.</p>
                     </div>
                 </div>
             </CardHeader>
@@ -367,13 +367,13 @@ function AISettings({ data, onChange }: { data: Partial<AIConfig>, onChange: (up
                 <div className="space-y-3">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                         <Info className="w-4 h-4 text-teal-600" />
-                        Prompt Master / Regras da IA
+                        Instrucoes do Comercial
                     </label>
                     <textarea 
                         className="w-full px-4 py-3 border border-slate-200 rounded-lg font-medium text-slate-700 h-48 text-sm bg-slate-50/30 focus:bg-white focus:ring-2 focus:ring-teal-100 transition-all"
                         value={data.prompt || ''}
                         onChange={(e) => onChange({ prompt: e.target.value })}
-                        placeholder="Instruções avançadas para o comportamento da IA..."
+                        placeholder="Instrucoes avancadas para o comportamento do Comercial..."
                     />
                     <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
                         Este é o prompt base que define a personalidade e as regras principais do seu agente Comercial. 

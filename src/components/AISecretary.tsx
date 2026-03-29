@@ -164,7 +164,7 @@ function ConfirmationsView() {
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-teal-600" />
-            Automação de Confirmação
+            Confirmacao Comercial
           </CardTitle>
           <CardDescription className="text-slate-500 font-medium">
             Envie mensagens automáticas para evitar faltas e otimizar sua agenda.
@@ -907,16 +907,16 @@ export function AISecretary() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              Assistente <span className="text-teal-600">IA</span>
+              Funcao <span className="text-teal-600">Comercial</span>
             </h2>
             <p className="text-slate-500 font-medium text-base">
-              Gestão inteligente de agendamentos e pacientes.
+              Gestao de conversas e automacao comercial.
             </p>
           </div>
           {aiConfig && (
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                {aiConfig.auto_schedule ? 'IA Ativa' : 'IA Pausada'}
+                {aiConfig.auto_schedule ? 'Comercial Ativo' : 'Comercial Pausado'}
               </span>
               <button
                 onClick={() => updateAI({ ...aiConfig, auto_schedule: !aiConfig.auto_schedule })}
@@ -1289,10 +1289,10 @@ function ConfigView() {
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-3">
             <Bot className="w-6 h-6 text-teal-600" />
-            Configurações da Assistente
+            Configuracoes do Comercial
           </CardTitle>
           <CardDescription className="text-slate-500 font-medium">
-            Personalize as informações da clínica para orientar a assistência automática.
+            Personalize as informacoes da clinica para orientar a automacao comercial.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
