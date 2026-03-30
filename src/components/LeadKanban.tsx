@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -705,7 +705,21 @@ export function LeadKanban() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Telefone</label>
-                  <input type="text" value={formData.phone} onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm" placeholder="(11) 99999-9999" />
+                  <input 
+                    type="text" 
+                    value={formData.phone} 
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      let formatted = val;
+                      if (val.length <= 11) {
+                        if (val.length > 2) formatted = `(${val.slice(0, 2)}) ${val.slice(2)}`;
+                        if (val.length > 7) formatted = `(${val.slice(0, 2)}) ${val.slice(2, 7)}-${val.slice(7, 11)}`;
+                      }
+                      setFormData(p => ({ ...p, phone: formatted }));
+                    }} 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-200 font-medium text-sm" 
+                    placeholder="(11) 99999-9999" 
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
