@@ -217,7 +217,7 @@ export function LeadChat({ lead, onClose }: LeadChatProps) {
               return (
                 <React.Fragment key={msg.id}>
                   {showDateSeparator && (
-                    <div className="flex justify-center my-8 sticky top-2 z-10 pointer-events-none">
+                    <div className="flex justify-center my-6">
                       <span className="bg-white/90 backdrop-blur-sm border border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm">
                         {getDateLabel(currentDate)}
                       </span>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 
@@ -29,20 +29,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [clinicName, setClinicName] = useState('');
-  const initializedRef = useRef(false);
 
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
+    let ignore = false;
 
     // Safety timeout - if nothing happens in 5 seconds, stop loading
     const safetyTimeout = setTimeout(() => {
-      console.warn('AuthContext: Safety timeout reached, forcing loading to false');
-      setLoading(false);
+      if (!ignore) {
+        console.warn('AuthContext: Safety timeout reached, forcing loading to false');
+        setLoading(false);
+      }
     }, 5000);
 
     // 1. Check for existing session first
     supabase.auth.getSession().then(async ({ data: { session: currentSession }, error }) => {
+      if (ignore) return;
       console.log('AuthContext: getSession result:', currentSession?.user?.email ?? 'no session', error);
       
       if (error) {
@@ -65,10 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // 2. Listen for future auth changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    // IMPORTANT: callback must NOT be async to avoid deadlock with Supabase client.
+    // The client needs the callback to return before finalizing auth state,
+    // but an async callback that awaits a Supabase query creates a circular wait.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (ignore) return;
       console.log('AuthContext: Auth event received:', event, 'Has session:', !!newSession);
       
-      // Skip INITIAL_SESSION since we handled it with getSession above
       if (event === 'INITIAL_SESSION') {
         console.log('AuthContext: Skipping INITIAL_SESSION event');
         return;
@@ -79,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AuthContext: Updated user state to:', newSession?.user?.email ?? 'null');
 
       if (newSession?.user) {
-        await fetchProfile(newSession.user.id);
+        // Defer profile fetch to next tick so onAuthStateChange callback returns
+        // immediately, allowing Supabase to finalize the session first
+        const userId = newSession.user.id;
+        setTimeout(() => fetchProfile(userId), 0);
       } else {
         console.log('AuthContext: No session, clearing profile');
         setProfile(null);
@@ -89,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      ignore = true;
       clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
